@@ -78,6 +78,12 @@ export function ControlBar({
             Esqueleto
           </Chip>
           <Chip
+            active={settings.voice}
+            onClick={() => onChange("voice", !settings.voice)}
+          >
+            Voz
+          </Chip>
+          <Chip
             active={settings.minSeverity === "warn"}
             onClick={() =>
               onChange("minSeverity", settings.minSeverity === "warn" ? "info" : "warn")

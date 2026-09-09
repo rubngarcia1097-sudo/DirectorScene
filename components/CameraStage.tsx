@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { GuideOverlay } from "@/components/GuideOverlay";
+import { LiveHud } from "@/components/LiveHud";
 import type { DirectorSettings } from "@/lib/ai/presets";
 import type { Landmark } from "@/lib/ai/subject";
-import type { SubjectMetrics } from "@/lib/ai/types";
+import type { FrameAnalysis, SubjectMetrics } from "@/lib/ai/types";
 import type { CameraStatus } from "@/lib/hooks/useCamera";
 import type { EngineStatus } from "@/lib/hooks/useFrameAnalysis";
 
@@ -19,6 +20,7 @@ interface CameraStageProps {
   settings: DirectorSettings;
   subject: SubjectMetrics | null;
   poseLandmarks: Landmark[] | null;
+  analysis: FrameAnalysis | null;
   onStart: () => void;
 }
 
@@ -33,6 +35,7 @@ export function CameraStage({
   settings,
   subject,
   poseLandmarks,
+  analysis,
   onStart,
 }: CameraStageProps) {
   // El contenedor adopta la relación de aspecto real del vídeo, de modo que las
@@ -77,12 +80,17 @@ export function CameraStage({
         />
 
         {active ? (
-          <GuideOverlay
-            settings={settings}
-            videoAspect={aspect}
-            subject={subject}
-            poseLandmarks={poseLandmarks}
-          />
+          <>
+            <GuideOverlay
+              settings={settings}
+              videoAspect={aspect}
+              subject={subject}
+              poseLandmarks={poseLandmarks}
+            />
+            {engineStatus === "running" && !engineError ? (
+              <LiveHud analysis={analysis} />
+            ) : null}
+          </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-sm text-white/70">

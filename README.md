@@ -73,8 +73,8 @@ sesión.
 
 ```
 app/                  rutas (App Router): landing, /director y /auth/callback
-components/           UI: cámara, overlay de guías, controles, sugerencias,
-                      cuenta y presets
+components/           UI: cámara, HUD en vivo, overlay de guías, controles,
+                      sugerencias, cuenta y presets
 lib/ai/               motor de dirección — es la capa reutilizable en móvil
   mediapipe.ts        carga de los landmarkers (pose + rostro)
   subject.ts          landmarks → métricas de encuadre
@@ -82,9 +82,10 @@ lib/ai/               motor de dirección — es la capa reutilizable en móvil
   lighting.ts         histograma → métricas y reglas de luz
   crop.ts             recorte de entrega según la plataforma
   engine.ts           combina reglas + estabiliza sugerencias
+  voice.ts            qué instrucción dictar y cuándo callar
   presets.ts          plataformas, composiciones y ajustes
 lib/hooks/            useCamera, useFrameAnalysis, useSettings,
-                      useSupabaseSession
+                      useSupabaseSession, useVoiceCoach
 lib/supabase/         cliente, tipos y queries de presets
 scripts/              copia de binarios WASM a public/
 supabase/             esquema SQL
@@ -110,6 +111,17 @@ En cada frame (unos 15 por segundo, no todos):
 El frame reducido que se usa para el histograma (160 px de ancho) se descarta
 inmediatamente: no se guarda ni se transmite.
 
+## Instrucción principal y voz
+
+Mientras se graba no se puede leer el panel lateral: `LiveHud` muestra la
+sugerencia más grave como una píldora sobre el propio vídeo, y el chip **Voz**
+la dicta con `SpeechSynthesisUtterance` (Web Speech API, también on-device).
+
+`lib/ai/voice.ts` decide qué decir y, sobre todo, cuándo callar: no repite la
+misma instrucción antes de `REPEAT_MS`, deja un silencio mínimo (`MIN_GAP_MS`)
+al cambiar de instrucción, no interrumpe una frase en curso y confirma "Así
+está bien" una sola vez al corregir el encuadre, no en cada frame.
+
 ## Estado
 
 - [x] Captura de cámara + MediaPipe (pose y rostro)
@@ -117,3 +129,4 @@ inmediatamente: no se guarda ni se transmite.
 - [x] Histograma → sugerencias de iluminación (contraluz, quemados, lateral)
 - [x] Overlay en vivo con guías y panel de sugerencias
 - [x] Auth de Supabase (enlace mágico) + presets guardados y sincronizados
+- [x] Instrucción principal sobre el vídeo (HUD) y modo voz (Web Speech API)

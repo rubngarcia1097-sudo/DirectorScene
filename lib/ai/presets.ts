@@ -104,6 +104,8 @@ export interface DirectorSettings {
   showSkeleton: boolean;
   /** Silenciar sugerencias por debajo de esta severidad. */
   minSeverity: Severity;
+  /** Dictar en voz alta la instrucción principal. */
+  voice: boolean;
 }
 
 export const DEFAULT_SETTINGS: DirectorSettings = {
@@ -113,6 +115,7 @@ export const DEFAULT_SETTINGS: DirectorSettings = {
   showSafeArea: true,
   showSkeleton: false,
   minSeverity: "info",
+  voice: false,
 };
 
 export const SEVERITY_ORDER: Record<Severity, number> = {

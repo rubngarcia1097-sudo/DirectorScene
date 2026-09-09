@@ -11,6 +11,7 @@ import { useCamera } from "@/lib/hooks/useCamera";
 import { useFrameAnalysis } from "@/lib/hooks/useFrameAnalysis";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { useSupabaseSession } from "@/lib/hooks/useSupabaseSession";
+import { useVoiceCoach } from "@/lib/hooks/useVoiceCoach";
 
 /** Pantalla principal: cámara + análisis + sugerencias en vivo. */
 export function DirectorStudio() {
@@ -26,6 +27,8 @@ export function DirectorStudio() {
     mirrored: camera.mirrored,
     settings,
   });
+
+  useVoiceCoach({ analysis, enabled: settings.voice });
 
   // Al salir de la pantalla cortamos el stream: la cámara no queda encendida.
   useEffect(() => camera.stop, [camera.stop]);
@@ -43,6 +46,7 @@ export function DirectorStudio() {
           settings={settings}
           subject={analysis?.subject ?? null}
           poseLandmarks={poseLandmarks}
+          analysis={analysis}
           onStart={() => void camera.start()}
         />
 
