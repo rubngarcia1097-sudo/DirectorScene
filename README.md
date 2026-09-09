@@ -291,6 +291,29 @@ manifest ahí. Los iconos en 192/512 que pide el manifest (`app/icons/[size]`)
 comparten diseño con el favicon (`lib/icon-design.tsx`) y se generan también
 por código, prerenderizados en build con `generateStaticParams`.
 
+### Funciona sin cobertura
+
+`public/sw.js` (registrado por `RegisterServiceWorker`, solo en producción)
+cachea la app en dos niveles distintos:
+
+- **Binarios de MediaPipe** (el WASM propio en `/mediapipe/**` y los modelos
+  `.task`, sean del bucket de Google o self-hosted): pesan varios MB y no
+  cambian salvo que se actualice el paquete o el modelo, así que se sirven
+  **cache-first** — una vez descargados, nunca se vuelven a pedir. Es
+  justo lo que hace lenta (o inviable) grabar en la calle con mala cobertura.
+- **El resto del propio origen** (HTML, JS/CSS de Next.js): **network-first**,
+  para que nadie quede atrapado en una versión vieja de la app; la caché
+  solo actúa de respaldo cuando no hay red. `/`, `/director` y el manifest se
+  precachean en el `install` del propio service worker — si no, la primera
+  vez que alguien vuelve sin red la navegación falla en frío, porque un
+  service worker no controla la página que lo registra y esa ruta nunca
+  llegó a pasar por el "network-first".
+
+Nunca intercepta peticiones a Supabase (otro origen): auth y presets van
+siempre directos a la red. `e2e/pwa.spec.ts` fuerza `context.setOffline(true)`
+tras la primera visita y comprueba que la cámara sigue encendiendo y que el
+motor de MediaPipe llega a analizar un frame, no solo que carga el HTML.
+
 ## Si algo falla
 
 `app/director/error.tsx` es el *error boundary* de Next.js para el estudio:
@@ -322,3 +345,4 @@ anterior.
 - [x] Suite E2E con Playwright (cámara, grabación, foto, PWA) corriendo en CI
 - [x] Auditoría de accesibilidad con axe-core (contraste WCAG AA, encabezados)
 - [x] Compartir clip/foto directamente en móvil (Web Share API con archivos)
+- [x] Service worker: la app y el motor de visión funcionan sin cobertura
