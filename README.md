@@ -345,6 +345,22 @@ siempre directos a la red. `e2e/pwa.spec.ts` fuerza `context.setOffline(true)`
 tras la primera visita y comprueba que la cámara sigue encendiendo y que el
 motor de MediaPipe llega a analizar un frame, no solo que carga el HTML.
 
+### Cabeceras de seguridad
+
+`next.config.ts` añade a toda la app, vía `headers()`:
+
+- `Permissions-Policy: camera=(self), microphone=(self), geolocation=()` —
+  solo este origen puede pedir cámara/micrófono; un iframe ajeno que
+  incrustara la app no heredaría el permiso.
+- `X-Frame-Options: DENY` — nadie debería enmarcar el estudio en un iframe
+  de terceros (clickjacking sobre los controles de grabación).
+- `X-Content-Type-Options: nosniff` y
+  `Referrer-Policy: strict-origin-when-cross-origin`.
+
+Sin CSP a propósito: la URL de Supabase la define cada despliegue por
+variable de entorno, y una política mal ajustada rompería el login sin
+avisar en producción.
+
 ## Si algo falla
 
 `app/director/error.tsx` es el *error boundary* de Next.js para el estudio:
@@ -377,3 +393,4 @@ anterior.
 - [x] Auditoría de accesibilidad con axe-core (contraste WCAG AA, encabezados)
 - [x] Compartir clip/foto directamente en móvil (Web Share API con archivos)
 - [x] Service worker: la app y el motor de visión funcionan sin cobertura
+- [x] Cabeceras de seguridad (Permissions-Policy, X-Frame-Options, nosniff)
