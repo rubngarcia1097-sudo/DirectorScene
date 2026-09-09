@@ -1,10 +1,11 @@
-import { COMPOSITIONS, PLATFORMS } from "./presets";
-import type { CompositionId, PlatformId } from "./presets";
+import { COMPOSITIONS, PLATFORMS, SHOT_STYLES } from "./presets";
+import type { CompositionId, PlatformId, ShotStyleId } from "./presets";
 import type { SubjectMetrics, Suggestion } from "./types";
 
 export interface FramingContext {
   platform: PlatformId;
   composition: CompositionId;
+  shotStyle: ShotStyleId;
   /**
    * true cuando la vista está espejada (cámara frontal). En ese caso las
    * instrucciones se dirigen a quien está delante de la cámara; si no, se
@@ -20,7 +21,7 @@ export interface FramingContext {
  */
 export function evaluateFraming(
   subject: SubjectMetrics,
-  { platform, composition, mirrored }: FramingContext,
+  { platform, composition, shotStyle, mirrored }: FramingContext,
 ): Suggestion[] {
   if (!subject.present || !subject.box || !subject.center) {
     return [
@@ -36,6 +37,7 @@ export function evaluateFraming(
 
   const preset = PLATFORMS[platform];
   const target = COMPOSITIONS[composition];
+  const style = SHOT_STYLES[shotStyle];
   const suggestions: Suggestion[] = [];
 
   // --- Posición horizontal (centrado o regla de tercios) ---
@@ -54,7 +56,7 @@ export function evaluateFraming(
   }
 
   // --- Distancia a cámara ---
-  const [minFill, maxFill] = preset.targetFill;
+  const [minFill, maxFill] = style.targetFill;
   if (subject.fill < minFill) {
     suggestions.push({
       id: "framing-too-far",
@@ -75,7 +77,7 @@ export function evaluateFraming(
 
   // --- Aire sobre la cabeza ---
   if (subject.headTop !== null) {
-    const [minHead, maxHead] = preset.targetHeadroom;
+    const [minHead, maxHead] = style.targetHeadroom;
     if (subject.headTop < minHead * 0.5) {
       suggestions.push({
         id: "framing-headroom-low",

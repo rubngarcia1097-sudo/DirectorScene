@@ -7,6 +7,7 @@ import { CameraStage } from "@/components/CameraStage";
 import { ControlBar } from "@/components/ControlBar";
 import { DeviceQualityPanel } from "@/components/DeviceQualityPanel";
 import { PresetsPanel } from "@/components/PresetsPanel";
+import { QuickPresets } from "@/components/QuickPresets";
 import { RecordControls } from "@/components/RecordControls";
 import { SnapshotButton } from "@/components/SnapshotButton";
 import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
@@ -100,6 +101,8 @@ export function DirectorStudio() {
           onUseHorizontal={() => update("platform", "youtube")}
           platformIsHorizontal={settings.platform === "youtube"}
         />
+
+        <QuickPresets onApply={setSettings} disabled={recorder.status === "recording"} />
 
         <ControlBar
           settings={settings}

@@ -36,6 +36,7 @@ test("un sujeto bien encuadrado no genera sugerencias", () => {
   const result = evaluateFraming(subject(), {
     platform: "tiktok",
     composition: "center",
+    shotStyle: "talking-head",
     mirrored: true,
   });
   assert.deepEqual(ids(result), []);
@@ -44,7 +45,7 @@ test("un sujeto bien encuadrado no genera sugerencias", () => {
 test("sin sujeto avisa de que no hay nadie en cuadro", () => {
   const result = evaluateFraming(
     { ...subject(), present: false, box: null, center: null },
-    { platform: "tiktok", composition: "center", mirrored: true },
+    { platform: "tiktok", composition: "center", shotStyle: "talking-head", mirrored: true },
   );
   assert.deepEqual(ids(result), ["subject-missing"]);
 });
@@ -55,6 +56,7 @@ test("el mensaje horizontal cambia según el espejado", () => {
   const [espejado] = evaluateFraming(off, {
     platform: "tiktok",
     composition: "center",
+    shotStyle: "talking-head",
     mirrored: true,
   });
   assert.equal(espejado.id, "framing-horizontal");
@@ -63,6 +65,7 @@ test("el mensaje horizontal cambia según el espejado", () => {
   const [directo] = evaluateFraming(off, {
     platform: "tiktok",
     composition: "center",
+    shotStyle: "talking-head",
     mirrored: false,
   });
   assert.match(directo.message, /cámara a la derecha/);
@@ -74,6 +77,7 @@ test("la regla de tercios acepta al sujeto descentrado", () => {
   const centrado = evaluateFraming(tercio, {
     platform: "tiktok",
     composition: "center",
+    shotStyle: "talking-head",
     mirrored: true,
   });
   assert.ok(ids(centrado).includes("framing-horizontal"));
@@ -81,6 +85,7 @@ test("la regla de tercios acepta al sujeto descentrado", () => {
   const tercios = evaluateFraming(tercio, {
     platform: "tiktok",
     composition: "thirds-left",
+    shotStyle: "talking-head",
     mirrored: true,
   });
   assert.ok(!ids(tercios).includes("framing-horizontal"));
@@ -89,22 +94,47 @@ test("la regla de tercios acepta al sujeto descentrado", () => {
 test("detecta demasiada distancia y cabeza cortada", () => {
   const lejos = evaluateFraming(
     subject({ fill: 0.2, box: { x: 0.4, y: 0.4, width: 0.2, height: 0.2 } }),
-    { platform: "tiktok", composition: "center", mirrored: true },
+    { platform: "tiktok", composition: "center", shotStyle: "talking-head", mirrored: true },
   );
   assert.ok(ids(lejos).includes("framing-too-far"));
 
   const cortada = evaluateFraming(subject({ headTop: 0.005 }), {
     platform: "tiktok",
     composition: "center",
+    shotStyle: "talking-head",
     mirrored: true,
   });
   assert.ok(ids(cortada).includes("framing-headroom-low"));
+});
+
+test("el estilo de plano cambia qué distancia se considera correcta", () => {
+  // 0.5 de ocupación: demasiado lejos para "hablas a cámara" ([0.55, 0.85]),
+  // pero justo el hueco que necesita "producto en mano" ([0.35, 0.65]) para
+  // que quepan las manos y lo que se enseña.
+  const sujeto = subject({ fill: 0.5 });
+
+  const hablando = evaluateFraming(sujeto, {
+    platform: "tiktok",
+    composition: "center",
+    shotStyle: "talking-head",
+    mirrored: true,
+  });
+  assert.ok(ids(hablando).includes("framing-too-far"));
+
+  const producto = evaluateFraming(sujeto, {
+    platform: "tiktok",
+    composition: "center",
+    shotStyle: "product-demo",
+    mirrored: true,
+  });
+  assert.ok(!ids(producto).includes("framing-too-far"));
 });
 
 test("avisa cuando el sujeto cae bajo los botones de la plataforma", () => {
   const result = evaluateFraming(subject({ center: { x: 0.9, y: 0.45 } }), {
     platform: "tiktok",
     composition: "center",
+    shotStyle: "talking-head",
     mirrored: true,
   });
   assert.ok(ids(result).includes("framing-safe-right"));

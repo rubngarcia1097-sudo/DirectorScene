@@ -1,6 +1,6 @@
 "use client";
 
-import { COMPOSITION_LIST, PLATFORM_LIST } from "@/lib/ai/presets";
+import { COMPOSITION_LIST, PLATFORM_LIST, SHOT_STYLES, SHOT_STYLE_LIST } from "@/lib/ai/presets";
 import type { DirectorSettings } from "@/lib/ai/presets";
 
 interface ControlBarProps {
@@ -71,6 +71,23 @@ export function ControlBar({
             </Chip>
           ))}
         </div>
+      </Field>
+
+      <Field label="Estilo de plano">
+        <div className="flex flex-wrap gap-2">
+          {SHOT_STYLE_LIST.map((style) => (
+            <Chip
+              key={style.id}
+              active={settings.shotStyle === style.id}
+              onClick={() => onChange("shotStyle", style.id)}
+            >
+              {style.label}
+            </Chip>
+          ))}
+        </div>
+        <p className="text-[10px] text-white/60">
+          {SHOT_STYLES[settings.shotStyle].description}
+        </p>
       </Field>
 
       <Field label="Guías">

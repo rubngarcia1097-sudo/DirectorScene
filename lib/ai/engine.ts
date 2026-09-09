@@ -89,6 +89,7 @@ export function analyzeFrame({
   const context: FramingContext = {
     platform: settings.platform,
     composition: settings.composition,
+    shotStyle: settings.shotStyle,
     mirrored,
   };
 

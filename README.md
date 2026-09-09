@@ -214,6 +214,35 @@ En cada frame (unos 15 por segundo, no todos):
 El frame reducido que se usa para el histograma (160 px de ancho) se descarta
 inmediatamente: no se guarda ni se transmite.
 
+### Estilo de plano y plantillas rápidas
+
+`targetFill`/`targetHeadroom` (qué tan cerca de cámara y con cuánto aire debe
+quedar el sujeto) vivían antes en `Platform`, una única cifra para las tres
+verticales (TikTok/Reels/Shorts). Eso hacía que la distancia "correcta" fuera
+siempre la de hablar a cámara — un unboxing o una demo de producto, que
+necesita más aire para que quepan las manos, se marcaba como "demasiado
+lejos" con ese mismo criterio, y las indicaciones no afinaban bien fuera del
+caso genérico.
+
+Ahora esa distancia es su propio ajuste, **Estilo de plano**
+(`lib/ai/presets.ts` → `SHOT_STYLES`), independiente de la plataforma:
+
+- **Hablas a cámara**: plano medio corto, cerca — storytime, opinión, reseña.
+  Mismas cifras que tenía antes cualquier vertical, así que no cambia el
+  comportamiento por defecto.
+- **Producto en mano**: plano más abierto, con más aire — unboxing o demo
+  (TikTok Shop), para que quepan las manos y lo que se enseña.
+
+**Plantillas rápidas** (`QUICK_PRESETS`, el bloque "Plantillas rápidas" sobre
+los controles) aplican de golpe plataforma + estilo de plano + composición +
+guías + voz + severidad mínima para un tipo de contenido concreto, en vez de
+tocar cada ajuste por separado. Son fijas, no editables — para guardar una
+variación propia sigue estando el guardado manual de presets más abajo en
+"Cuenta y presets". Ambos ajustes (estilo de plano y plantilla) solo cambian
+lo que el motor puede evaluar de verdad — encuadre del cuerpo y luz —; no hay
+detección de objetos, así que no "ve" si el producto en sí está bien
+encuadrado o iluminado, solo a quien lo sostiene.
+
 ## Instrucción principal y voz
 
 Mientras se graba no se puede leer el panel lateral: `LiveHud` muestra la
@@ -403,3 +432,5 @@ anterior.
 - [x] Service worker: la app y el motor de visión funcionan sin cobertura
 - [x] Cabeceras de seguridad (Permissions-Policy, X-Frame-Options, nosniff)
 - [x] Grabación con fallback a MP4/H.264 para Safari (antes solo WebM)
+- [x] Estilo de plano (hablas a cámara / producto en mano) y plantillas
+      rápidas por tipo de contenido (TikTok, TikTok Shop, Reels)

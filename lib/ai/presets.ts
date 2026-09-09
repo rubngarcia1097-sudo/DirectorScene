@@ -17,10 +17,6 @@ export interface Platform {
   aspect: number; // ancho / alto
   aspectLabel: string;
   safeArea: SafeArea;
-  /** Altura objetivo del sujeto respecto al frame (fracción). */
-  targetFill: [number, number];
-  /** Aire sobre la cabeza recomendado (fracción del alto). */
-  targetHeadroom: [number, number];
   /**
    * Duración máxima recomendada al grabar desde la propia app, en segundos.
    * `null` cuando la plataforma no impone un tope práctico (YouTube normal).
@@ -39,8 +35,6 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     aspectLabel: "9:16",
     // La UI de TikTok tapa la franja inferior (descripción) y la derecha (botones).
     safeArea: { top: 0.08, bottom: 0.22, left: 0.04, right: 0.2 },
-    targetFill: [0.55, 0.85],
-    targetHeadroom: [0.04, 0.14],
     maxDurationSec: 600,
   },
   reels: {
@@ -49,8 +43,6 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     aspect: 9 / 16,
     aspectLabel: "9:16",
     safeArea: { top: 0.09, bottom: 0.2, left: 0.04, right: 0.16 },
-    targetFill: [0.55, 0.85],
-    targetHeadroom: [0.04, 0.14],
     maxDurationSec: 180,
   },
   shorts: {
@@ -59,8 +51,6 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     aspect: 9 / 16,
     aspectLabel: "9:16",
     safeArea: { top: 0.07, bottom: 0.18, left: 0.04, right: 0.14 },
-    targetFill: [0.5, 0.82],
-    targetHeadroom: [0.04, 0.14],
     maxDurationSec: 180,
   },
   youtube: {
@@ -69,13 +59,55 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     aspect: 16 / 9,
     aspectLabel: "16:9",
     safeArea: { top: 0.05, bottom: 0.12, left: 0.05, right: 0.05 },
-    targetFill: [0.5, 0.9],
-    targetHeadroom: [0.05, 0.18],
     maxDurationSec: null,
   },
 };
 
 export const PLATFORM_LIST = Object.values(PLATFORMS);
+
+/**
+ * Estilo de plano: qué tan cerca de cámara y con cuánto aire debe quedar el
+ * sujeto. Es independiente de la plataforma (aspecto/duración) — un mismo
+ * TikTok puede ser un storytime a cámara cerca, o un unboxing con las manos
+ * y el producto ocupando buena parte del cuadro. Antes estos números vivían
+ * en `Platform` y eran uno solo para las tres verticales: un plano de
+ * producto que necesita más aire se marcaba como "demasiado lejos" con las
+ * mismas cifras pensadas para hablar a cámara, así que las indicaciones no
+ * afinaban bien salvo en el caso genérico.
+ */
+export type ShotStyleId = "talking-head" | "product-demo";
+
+export interface ShotStyle {
+  id: ShotStyleId;
+  label: string;
+  description: string;
+  /** Altura objetivo del sujeto respecto al frame (fracción). */
+  targetFill: [number, number];
+  /** Aire sobre la cabeza recomendado (fracción del alto). */
+  targetHeadroom: [number, number];
+}
+
+export const SHOT_STYLES: Record<ShotStyleId, ShotStyle> = {
+  "talking-head": {
+    id: "talking-head",
+    label: "Hablas a cámara",
+    description: "Storytime, opinión o reseña — plano medio corto, cerca de cámara.",
+    // Mismas cifras que antes tenían tiktok/reels/shorts: el comportamiento
+    // por defecto no cambia para quien no toca este ajuste.
+    targetFill: [0.55, 0.85],
+    targetHeadroom: [0.04, 0.14],
+  },
+  "product-demo": {
+    id: "product-demo",
+    label: "Producto en mano",
+    description:
+      "Unboxing o demo de producto (TikTok Shop) — plano más abierto para que quepan tus manos y lo que enseñas.",
+    targetFill: [0.35, 0.65],
+    targetHeadroom: [0.06, 0.2],
+  },
+};
+
+export const SHOT_STYLE_LIST = Object.values(SHOT_STYLES);
 
 /** Estilo de composición: dónde debe caer el sujeto horizontalmente. */
 export type CompositionId = "center" | "thirds-left" | "thirds-right";
@@ -111,6 +143,7 @@ export const COMPOSITION_LIST = Object.values(COMPOSITIONS);
 export interface DirectorSettings {
   platform: PlatformId;
   composition: CompositionId;
+  shotStyle: ShotStyleId;
   showGrid: boolean;
   showSafeArea: boolean;
   showSkeleton: boolean;
@@ -123,12 +156,75 @@ export interface DirectorSettings {
 export const DEFAULT_SETTINGS: DirectorSettings = {
   platform: "tiktok",
   composition: "center",
+  shotStyle: "talking-head",
   showGrid: true,
   showSafeArea: true,
   showSkeleton: false,
   minSeverity: "info",
   voice: false,
 };
+
+/**
+ * Plantillas rápidas: combinan varios ajustes a la vez para un tipo de
+ * contenido concreto, en vez de tocar cada control uno por uno. Son fijas
+ * (no editables ni borrables) — para guardar una variación propia está el
+ * guardado manual de presets en `lib/supabase/presets.ts`.
+ */
+export interface QuickPreset {
+  id: string;
+  label: string;
+  description: string;
+  settings: DirectorSettings;
+}
+
+export const QUICK_PRESETS: QuickPreset[] = [
+  {
+    id: "tiktok-ugc",
+    label: "TikTok · Hablas a cámara",
+    description: "Storytime, opinión o reseña — cerca de cámara, con voz activada.",
+    settings: {
+      platform: "tiktok",
+      composition: "center",
+      shotStyle: "talking-head",
+      showGrid: true,
+      showSafeArea: true,
+      showSkeleton: false,
+      minSeverity: "info",
+      voice: true,
+    },
+  },
+  {
+    id: "tiktok-shop",
+    label: "TikTok Shop · Producto en mano",
+    description:
+      "Unboxing o demo de producto — plano abierto para que quepan tus manos y lo que enseñas; solo avisos importantes para no interrumpir la demo.",
+    settings: {
+      platform: "tiktok",
+      composition: "center",
+      shotStyle: "product-demo",
+      showGrid: true,
+      showSafeArea: true,
+      showSkeleton: false,
+      minSeverity: "warn",
+      voice: false,
+    },
+  },
+  {
+    id: "reels-ugc",
+    label: "Instagram Reels · Hablas a cámara",
+    description: "Igual que el de TikTok, pero con la zona segura y duración de Reels.",
+    settings: {
+      platform: "reels",
+      composition: "center",
+      shotStyle: "talking-head",
+      showGrid: true,
+      showSafeArea: true,
+      showSkeleton: false,
+      minSeverity: "info",
+      voice: true,
+    },
+  },
+];
 
 export const SEVERITY_ORDER: Record<Severity, number> = {
   ok: 0,
