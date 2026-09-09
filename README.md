@@ -222,6 +222,13 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
   YouTube. Al llegar al límite la grabación se corta sola — igual que la
   cámara nativa de esas apps — y los últimos 10 segundos se avisan en ámbar
   con la cuenta atrás ("quedan 0:08").
+- **Compartir directamente** (`lib/share.ts`): en móvil (Chrome/Safari con
+  Web Share API de nivel 2), el botón **Compartir** abre la hoja nativa del
+  sistema con el clip o la foto ya adjuntos — a TikTok, Instagram, WhatsApp,
+  donde sea — sin pasar por descargar y volver a subir a mano. Se detecta con
+  `navigator.canShare({ files })`: en el resto de navegadores (la mayoría de
+  escritorio) el botón no aparece y **Descargar** sigue siendo la única vía,
+  como antes.
 - Si la cámara trasera del móvil tiene flash controlable (`torch` en
   `MediaTrackCapabilities`, una extensión no estándar de Media Capture),
   aparece un chip **Linterna** en los controles de cámara para usarla como
@@ -314,3 +321,4 @@ anterior.
 - [x] Manifest de PWA: instalable en Android/Chrome, abre directo al estudio
 - [x] Suite E2E con Playwright (cámara, grabación, foto, PWA) corriendo en CI
 - [x] Auditoría de accesibilidad con axe-core (contraste WCAG AA, encabezados)
+- [x] Compartir clip/foto directamente en móvil (Web Share API con archivos)

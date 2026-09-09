@@ -17,6 +17,7 @@ export type RecorderStatus =
 
 export interface RecordingResult {
   url: string;
+  blob: Blob;
   fileName: string;
   sizeBytes: number;
   durationMs: number;
@@ -268,6 +269,7 @@ export function useRecorder({
 
         setResult({
           url,
+          blob,
           fileName: `directorscene-${platform}-${Date.now()}.${extension}`,
           sizeBytes: blob.size,
           durationMs: performance.now() - startedAtRef.current,

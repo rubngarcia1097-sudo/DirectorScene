@@ -9,6 +9,7 @@ import { computeOutputSize } from "@/lib/ai/recording";
 
 export interface SnapshotResult {
   url: string;
+  blob: Blob;
   fileName: string;
   sizeBytes: number;
 }
@@ -102,6 +103,7 @@ export function useSnapshot({
       setError(null);
       setResult({
         url: resultUrlRef.current,
+        blob,
         fileName: `directorscene-${platform}-${Date.now()}.png`,
         sizeBytes: blob.size,
       });

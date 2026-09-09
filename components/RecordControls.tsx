@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { isTypingTarget } from "@/lib/dom";
 import type { UseRecorderResult } from "@/lib/hooks/useRecorder";
+import { canShareFiles, isShareAbort } from "@/lib/share";
 
 /** Segundos de margen para colocarse en cuadro antes de que arranque la grabación de verdad. */
 const COUNTDOWN_SECONDS = 3;
@@ -151,25 +152,54 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
   }
 
   if (recorder.status === "done" && recorder.result) {
+    const { result } = recorder;
+    const file = new File([result.blob], result.fileName, { type: result.blob.type });
+    const shareable = canShareFiles([file]);
+
+    async function share() {
+      try {
+        await navigator.share({ files: [file], title: result.fileName });
+      } catch (cause) {
+        if (!isShareAbort(cause)) {
+          // El propio share() ya muestra su error al usuario en la mayoría de
+          // navegadores; aquí no hay más sitio útil donde mostrarlo, así que
+          // se deja disponible seguir descargando el clip manualmente.
+          console.error("No se pudo compartir el clip", cause);
+        }
+      }
+    }
+
     return (
       <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
         <div className="flex items-center justify-between text-xs text-white/50">
           <span>
-            Clip listo · {formatTime(recorder.result.durationMs)} ·{" "}
-            {formatSize(recorder.result.sizeBytes)}
+            Clip listo · {formatTime(result.durationMs)} · {formatSize(result.sizeBytes)}
           </span>
         </div>
         <video
-          src={recorder.result.url}
+          src={result.url}
           controls
           playsInline
           className="max-h-64 w-full rounded-lg bg-black"
         />
         <div className="flex gap-2">
+          {shareable ? (
+            <button
+              type="button"
+              onClick={() => void share()}
+              className="flex-1 rounded-full bg-white px-4 py-1.5 text-center text-xs font-semibold text-black transition hover:bg-white/85"
+            >
+              Compartir
+            </button>
+          ) : null}
           <a
-            href={recorder.result.url}
-            download={recorder.result.fileName}
-            className="flex-1 rounded-full bg-white px-4 py-1.5 text-center text-xs font-semibold text-black transition hover:bg-white/85"
+            href={result.url}
+            download={result.fileName}
+            className={
+              shareable
+                ? "flex-1 rounded-full border border-white/15 px-4 py-1.5 text-center text-xs font-medium text-white/80 transition hover:border-white/40 hover:text-white"
+                : "flex-1 rounded-full bg-white px-4 py-1.5 text-center text-xs font-semibold text-black transition hover:bg-white/85"
+            }
           >
             Descargar
           </a>
