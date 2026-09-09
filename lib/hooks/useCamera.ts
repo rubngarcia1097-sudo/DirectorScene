@@ -31,26 +31,47 @@ export interface UseCameraResult {
   deviceId: string | null;
   /** null hasta que hay un stream activo. */
   trackInfo: CameraTrackInfo | null;
+  /** Solo la trasera de algunos móviles la tiene; la mayoría de webcams no. */
+  torchSupported: boolean;
+  torchOn: boolean;
+  setTorch: (on: boolean) => Promise<void>;
   start: () => Promise<void>;
   stop: () => void;
   flip: () => void;
   selectDevice: (deviceId: string) => void;
 }
 
-function readCapabilities(track: MediaStreamTrack): CameraCapabilitySummary {
+/**
+ * `torch` es una extensión de Media Capture (no está en el lib.dom estándar
+ * de TypeScript): se declara aparte en vez de `as any` para no perder el
+ * tipado del resto del objeto.
+ */
+interface TorchCapabilities {
+  torch?: boolean;
+}
+interface TorchConstraintSet extends MediaTrackConstraintSet {
+  torch?: boolean;
+}
+
+function readCapabilities(
+  track: MediaStreamTrack,
+): { summary: CameraCapabilitySummary; torchSupported: boolean } {
   // Safari y algunos navegadores no implementan getCapabilities(); sin ella
   // solo queda lo que getSettings() diga de la negociación actual.
-  const capabilities =
+  const capabilities: MediaTrackCapabilities & TorchCapabilities =
     typeof track.getCapabilities === "function" ? track.getCapabilities() : {};
   const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
 
   return {
-    maxWidth: capabilities.width?.max ?? null,
-    maxHeight: capabilities.height?.max ?? null,
-    maxFrameRate: capabilities.frameRate?.max ?? null,
-    currentWidth: settings.width ?? null,
-    currentHeight: settings.height ?? null,
-    currentFrameRate: settings.frameRate ?? null,
+    summary: {
+      maxWidth: capabilities.width?.max ?? null,
+      maxHeight: capabilities.height?.max ?? null,
+      maxFrameRate: capabilities.frameRate?.max ?? null,
+      currentWidth: settings.width ?? null,
+      currentHeight: settings.height ?? null,
+      currentFrameRate: settings.frameRate ?? null,
+    },
+    torchSupported: "torch" in capabilities,
   };
 }
 
@@ -68,13 +89,18 @@ export function useCamera(): UseCameraResult {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [trackInfo, setTrackInfo] = useState<CameraTrackInfo | null>(null);
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   const stop = useCallback(() => {
+    // Detener la pista apaga físicamente la linterna si estaba encendida.
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setStatus("idle");
     setTrackInfo(null);
+    setTorchSupported(false);
+    setTorchOn(false);
   }, []);
 
   /**
@@ -128,11 +154,14 @@ export function useCamera(): UseCameraResult {
       const track = stream.getVideoTracks()[0];
       if (track) {
         const hasTouch = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+        const { summary, torchSupported: hasTorch } = readCapabilities(track);
         setTrackInfo({
           label: track.label,
           deviceKind: classifyDeviceKind(navigator.userAgent, hasTouch),
-          capabilities: readCapabilities(track),
+          capabilities: summary,
         });
+        setTorchSupported(hasTorch);
+        setTorchOn(false); // el flash nunca arranca encendido al abrir la cámara
       }
 
       setStatus("ready");
@@ -175,6 +204,20 @@ export function useCamera(): UseCameraResult {
     [active, facingMode, open],
   );
 
+  const setTorch = useCallback(async (on: boolean) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: on } as TorchConstraintSet],
+      });
+      setTorchOn(on);
+    } catch {
+      // Algunos navegadores anuncian soporte en getCapabilities() y aun así
+      // fallan al aplicarlo; no es un error del usuario, solo lo ignoramos.
+    }
+  }, []);
+
   useEffect(() => stop, [stop]);
 
   return {
@@ -186,6 +229,9 @@ export function useCamera(): UseCameraResult {
     devices,
     deviceId,
     trackInfo,
+    torchSupported,
+    torchOn,
+    setTorch,
     start,
     stop,
     flip,

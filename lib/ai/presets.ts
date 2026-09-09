@@ -21,6 +21,14 @@ export interface Platform {
   targetFill: [number, number];
   /** Aire sobre la cabeza recomendado (fracción del alto). */
   targetHeadroom: [number, number];
+  /**
+   * Duración máxima recomendada al grabar desde la propia app, en segundos.
+   * `null` cuando la plataforma no impone un tope práctico (YouTube normal).
+   * Cifras de 2026: Shorts limita a 3 min; Reels grabado en la app deja de
+   * comportarse como Reel pasados los 3 min aunque admita subir hasta 20;
+   * TikTok permite grabar hasta 10 min desde la cámara de la app.
+   */
+  maxDurationSec: number | null;
 }
 
 export const PLATFORMS: Record<PlatformId, Platform> = {
@@ -33,6 +41,7 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     safeArea: { top: 0.08, bottom: 0.22, left: 0.04, right: 0.2 },
     targetFill: [0.55, 0.85],
     targetHeadroom: [0.04, 0.14],
+    maxDurationSec: 600,
   },
   reels: {
     id: "reels",
@@ -42,6 +51,7 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     safeArea: { top: 0.09, bottom: 0.2, left: 0.04, right: 0.16 },
     targetFill: [0.55, 0.85],
     targetHeadroom: [0.04, 0.14],
+    maxDurationSec: 180,
   },
   shorts: {
     id: "shorts",
@@ -51,6 +61,7 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     safeArea: { top: 0.07, bottom: 0.18, left: 0.04, right: 0.14 },
     targetFill: [0.5, 0.82],
     targetHeadroom: [0.04, 0.14],
+    maxDurationSec: 180,
   },
   youtube: {
     id: "youtube",
@@ -60,6 +71,7 @@ export const PLATFORMS: Record<PlatformId, Platform> = {
     safeArea: { top: 0.05, bottom: 0.12, left: 0.05, right: 0.05 },
     targetFill: [0.5, 0.9],
     targetHeadroom: [0.05, 0.18],
+    maxDurationSec: null,
   },
 };
 

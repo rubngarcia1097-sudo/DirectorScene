@@ -99,6 +99,9 @@ export function DirectorStudio() {
           deviceId={camera.deviceId}
           onSelectDevice={camera.selectDevice}
           onFlip={camera.flip}
+          torchSupported={camera.torchSupported}
+          torchOn={camera.torchOn}
+          onToggleTorch={() => void camera.setTorch(!camera.torchOn)}
           cameraReady={camera.status === "ready"}
           platformLocked={recorder.status === "recording"}
         />

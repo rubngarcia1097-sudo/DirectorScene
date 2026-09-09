@@ -37,14 +37,27 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
   }
 
   if (recorder.status === "recording") {
+    // Últimos 10 s antes del corte automático de la plataforma: se avisa en
+    // vez de dejar que la grabación se detenga sin más.
+    const closeToLimit = recorder.remainingMs !== null && recorder.remainingMs <= 10_000;
+
     return (
-      <div className="flex items-center gap-3">
-        <span className="flex items-center gap-2 text-sm font-medium text-rose-300">
+      <div className="flex flex-wrap items-center gap-3">
+        <span
+          className={`flex items-center gap-2 text-sm font-medium ${
+            closeToLimit ? "text-amber-300" : "text-rose-300"
+          }`}
+        >
           <span
             aria-hidden
-            className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500"
+            className={`h-2.5 w-2.5 animate-pulse rounded-full ${
+              closeToLimit ? "bg-amber-400" : "bg-rose-500"
+            }`}
           />
           Grabando {formatTime(recorder.elapsedMs)}
+          {recorder.remainingMs !== null
+            ? ` · quedan ${formatTime(recorder.remainingMs)}`
+            : ""}
         </span>
         <button
           type="button"

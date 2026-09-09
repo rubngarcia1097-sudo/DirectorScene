@@ -5,6 +5,7 @@ import { computeCropRect } from "./crop";
 import { SuggestionStabilizer } from "./engine";
 import { evaluateFraming } from "./framing";
 import { analyzeLighting, evaluateLighting, scoreShot } from "./lighting";
+import { PLATFORMS } from "./presets";
 import { extractSubject } from "./subject";
 import type { Landmark } from "./subject";
 import type { SubjectMetrics } from "./types";
@@ -225,4 +226,19 @@ test("el estabilizador exige varios frames antes de mostrar y ocultar", () => {
   assert.deepEqual(ids(stabilizer.update([])), ["x"]);
   assert.deepEqual(ids(stabilizer.update([])), ["x"]);
   assert.deepEqual(ids(stabilizer.update([])), []);
+});
+
+test("los formatos cortos tienen tope de duración; YouTube normal no", () => {
+  // Cifras de 2026 (ver comentario en presets.ts): Shorts y Reels graban en
+  // la app hasta 3 min, TikTok hasta 10; YouTube largo no tiene techo.
+  assert.equal(PLATFORMS.shorts.maxDurationSec, 180);
+  assert.equal(PLATFORMS.reels.maxDurationSec, 180);
+  assert.equal(PLATFORMS.tiktok.maxDurationSec, 600);
+  assert.equal(PLATFORMS.youtube.maxDurationSec, null);
+
+  for (const platform of Object.values(PLATFORMS)) {
+    if (platform.maxDurationSec !== null) {
+      assert.ok(platform.maxDurationSec > 0);
+    }
+  }
 });

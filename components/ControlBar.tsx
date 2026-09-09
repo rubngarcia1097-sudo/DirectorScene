@@ -16,6 +16,10 @@ interface ControlBarProps {
   cameraReady: boolean;
   /** true mientras se graba: el recorte de plataforma queda fijado a esa toma. */
   platformLocked?: boolean;
+  /** Solo la trasera de algunos móviles la tiene; la mayoría de webcams no. */
+  torchSupported: boolean;
+  torchOn: boolean;
+  onToggleTorch: () => void;
 }
 
 /** Controles de plataforma, composición y guías visuales. */
@@ -28,6 +32,9 @@ export function ControlBar({
   onFlip,
   cameraReady,
   platformLocked = false,
+  torchSupported,
+  torchOn,
+  onToggleTorch,
 }: ControlBarProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -113,6 +120,11 @@ export function ControlBar({
           >
             Cambiar frontal/trasera
           </button>
+          {torchSupported ? (
+            <Chip active={torchOn} onClick={onToggleTorch}>
+              🔦 Linterna
+            </Chip>
+          ) : null}
           {devices.length > 1 ? (
             <select
               value={deviceId ?? ""}

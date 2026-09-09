@@ -29,6 +29,8 @@ export interface UseRecorderOptions {
 export interface UseRecorderResult {
   status: RecorderStatus;
   elapsedMs: number;
+  /** Tiempo hasta el corte automático; null si la plataforma no impone tope. */
+  remainingMs: number | null;
   error: string | null;
   /** Aviso no bloqueante: p. ej. se grabó sin audio por falta de permiso. */
   warning: string | null;
@@ -96,6 +98,7 @@ export function useRecorder({
 }: UseRecorderOptions): UseRecorderResult {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [recordingCapMs, setRecordingCapMs] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [result, setResult] = useState<RecordingResult | null>(null);
@@ -135,6 +138,7 @@ export function useRecorder({
     setWarning(null);
     setStatus("idle");
     setElapsedMs(0);
+    setRecordingCapMs(null);
   }, []);
 
   const stop = useCallback(() => {
@@ -257,6 +261,12 @@ export function useRecorder({
       setStatus("recording");
       setElapsedMs(0);
 
+      // Tope fijado al empezar, igual que el recorte: cambiar de plataforma
+      // a mitad de toma no debe alargar ni acortar el límite ya en marcha.
+      const maxDurationSec = PLATFORMS[platform].maxDurationSec;
+      const maxDurationMs = maxDurationSec !== null ? maxDurationSec * 1000 : null;
+      setRecordingCapMs(maxDurationMs);
+
       const drawIntervalMs = 1000 / targetFrameRate;
 
       const draw = (now: number) => {
@@ -288,10 +298,14 @@ export function useRecorder({
       rafRef.current = requestAnimationFrame(draw);
 
       timerRef.current = setInterval(() => {
-        setElapsedMs(performance.now() - startedAtRef.current);
+        const elapsed = performance.now() - startedAtRef.current;
+        setElapsedMs(elapsed);
+        // Corte automático al llegar al tope de la plataforma, igual que TikTok
+        // o Instagram cortan la grabación en su propia cámara.
+        if (maxDurationMs !== null && elapsed >= maxDurationMs) stop();
       }, ELAPSED_TICK_MS);
     },
-    [cleanupTimers, mirrored, platform, stopMic, targetFrameRate, videoRef],
+    [cleanupTimers, mirrored, platform, stop, stopMic, targetFrameRate, videoRef],
   );
 
   // Si la cámara se apaga (o el componente se desmonta) a mitad de grabación,
@@ -318,6 +332,7 @@ export function useRecorder({
   return {
     status,
     elapsedMs,
+    remainingMs: recordingCapMs !== null ? Math.max(0, recordingCapMs - elapsedMs) : null,
     error,
     warning,
     result,

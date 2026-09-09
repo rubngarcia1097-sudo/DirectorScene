@@ -144,6 +144,16 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
   descoordinaría el recorte con lo que ya se grabó.
 - El clip vive en memoria (`Blob` + `URL.createObjectURL`) hasta que se
   descarga o se descarta; nunca se sube a ningún sitio.
+- Cada plataforma tiene un tope de duración (`Platform.maxDurationSec` en
+  `lib/ai/presets.ts`): 10 min en TikTok, 3 en Reels y Shorts, sin tope en
+  YouTube. Al llegar al límite la grabación se corta sola — igual que la
+  cámara nativa de esas apps — y los últimos 10 segundos se avisan en ámbar
+  con la cuenta atrás ("quedan 0:08").
+- Si la cámara trasera del móvil tiene flash controlable (`torch` en
+  `MediaTrackCapabilities`, una extensión no estándar de Media Capture),
+  aparece un chip **Linterna** en los controles de cámara para usarla como
+  luz de relleno — cierra el círculo con la sugerencia "falta luz" del motor
+  de iluminación, en vez de dejarla en un simple aviso.
 
 ## Calidad según el dispositivo
 
@@ -192,3 +202,4 @@ espalda (contraluz, el error más común grabando desde el escritorio).
 - [x] Instrucción principal sobre el vídeo (HUD) y modo voz (Web Speech API)
 - [x] Grabar y descargar el clip ya recortado a la plataforma elegida
 - [x] Recomendaciones de calidad según la cámara detectada + módulo de laptop
+- [x] Tope de duración por plataforma con corte automático + control de linterna
