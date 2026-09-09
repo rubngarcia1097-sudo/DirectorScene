@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { isTypingTarget } from "@/lib/dom";
 import type { UseRecorderResult } from "@/lib/hooks/useRecorder";
 
 /** Segundos de margen para colocarse en cuadro antes de que arranque la grabación de verdad. */
@@ -16,12 +17,6 @@ function formatTime(ms: number): string {
 
 function formatSize(bytes: number): string {
   return `${(bytes / 1e6).toFixed(1)} MB`;
-}
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
 }
 
 interface RecordControlsProps {

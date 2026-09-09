@@ -8,12 +8,14 @@ import { ControlBar } from "@/components/ControlBar";
 import { DeviceQualityPanel } from "@/components/DeviceQualityPanel";
 import { PresetsPanel } from "@/components/PresetsPanel";
 import { RecordControls } from "@/components/RecordControls";
+import { SnapshotButton } from "@/components/SnapshotButton";
 import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
 import { buildDeviceProfile } from "@/lib/ai/device";
 import { useCamera } from "@/lib/hooks/useCamera";
 import { useFrameAnalysis } from "@/lib/hooks/useFrameAnalysis";
 import { useRecorder } from "@/lib/hooks/useRecorder";
 import { useSettings } from "@/lib/hooks/useSettings";
+import { useSnapshot } from "@/lib/hooks/useSnapshot";
 import { useSupabaseSession } from "@/lib/hooks/useSupabaseSession";
 import { useVoiceCoach } from "@/lib/hooks/useVoiceCoach";
 
@@ -57,6 +59,12 @@ export function DirectorStudio() {
     targetFrameRate: deviceProfile?.recommendedFrameRate,
   });
 
+  const snapshot = useSnapshot({
+    videoRef: camera.videoRef,
+    mirrored: camera.mirrored,
+    platform: settings.platform,
+  });
+
   // Al salir de la pantalla cortamos el stream: la cámara no queda encendida.
   useEffect(() => camera.stop, [camera.stop]);
 
@@ -78,10 +86,10 @@ export function DirectorStudio() {
           onStart={() => void camera.start()}
         />
 
-        <RecordControls
-          recorder={recorder}
-          disabled={camera.status !== "ready"}
-        />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <RecordControls recorder={recorder} disabled={camera.status !== "ready"} />
+          <SnapshotButton snapshot={snapshot} disabled={camera.status !== "ready"} />
+        </div>
 
         <DeviceQualityPanel
           profile={deviceProfile}

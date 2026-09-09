@@ -78,7 +78,7 @@ sesión.
 ```
 app/                  rutas (App Router): landing, /director y /auth/callback
 components/           UI: cámara, HUD en vivo, overlay de guías, controles,
-                      grabación, calidad de dispositivo, sugerencias,
+                      grabación, foto, calidad de dispositivo, sugerencias,
                       cuenta y presets
 lib/ai/               motor de dirección — es la capa reutilizable en móvil
   mediapipe.ts        carga de los landmarkers (pose + rostro)
@@ -92,7 +92,9 @@ lib/ai/               motor de dirección — es la capa reutilizable en móvil
   device.ts           calidad de cámara y consejos según el dispositivo
   presets.ts          plataformas, composiciones y ajustes
 lib/hooks/            useCamera, useFrameAnalysis, useSettings,
-                      useSupabaseSession, useVoiceCoach, useRecorder
+                      useSupabaseSession, useVoiceCoach, useRecorder,
+                      useSnapshot
+lib/dom.ts            utilidades de teclado/foco compartidas por los atajos
 lib/supabase/         cliente, tipos y queries de presets
 scripts/              copia de binarios WASM a public/
 supabase/             esquema SQL
@@ -163,6 +165,14 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
   luz de relleno — cierra el círculo con la sugerencia "falta luz" del motor
   de iluminación, en vez de dejarla en un simple aviso.
 
+### Capturar una foto
+
+El botón **📷 Foto** (`useSnapshot`) hace una cosa más simple que grabar: saca
+un único fotograma con el mismo recorte y espejado que el vídeo, sin las
+guías del overlay, como PNG. Útil para elegir una miniatura sin grabar un
+clip entero. No comparte canvas con `useRecorder` ni interfiere con una
+grabación en curso — se puede capturar una foto mientras se está grabando.
+
 ## Calidad según el dispositivo
 
 No hay forma fiable de leer el "modelo" de un móvil desde el navegador (y los
@@ -212,3 +222,4 @@ espalda (contraluz, el error más común grabando desde el escritorio).
 - [x] Recomendaciones de calidad según la cámara detectada + módulo de laptop
 - [x] Tope de duración por plataforma con corte automático + control de linterna
 - [x] Cuenta atrás antes de grabar + atajos de teclado (espacio, Esc)
+- [x] Captura de foto (miniatura) sin interrumpir la grabación de vídeo
