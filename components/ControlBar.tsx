@@ -36,10 +36,8 @@ export function ControlBar({
               active={settings.platform === platform.id}
               onClick={() => onChange("platform", platform.id)}
             >
-              {platform.label}
-              <span className="ml-1 text-[10px] opacity-60">
-                {platform.aspectLabel}
-              </span>
+              {platform.label}{" "}
+              <span className="text-[10px] opacity-60">{platform.aspectLabel}</span>
             </Chip>
           ))}
         </div>

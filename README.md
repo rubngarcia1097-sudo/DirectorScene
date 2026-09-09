@@ -57,11 +57,24 @@ origen y no se versionan en el repo.
 El SQL de la tabla `presets` (con RLS por usuario) está en
 [`supabase/schema.sql`](supabase/schema.sql).
 
+### Cuenta y presets
+
+El acceso es por **enlace mágico**: el usuario escribe su correo y Supabase le
+envía un enlace que vuelve a `/auth/callback`. En el panel de Supabase hay que
+añadir esa ruta a *Authentication → URL Configuration → Redirect URLs*
+(`http://localhost:3000/auth/callback` y la del despliegue).
+
+Con sesión iniciada los presets se guardan en la tabla `presets`; sin ella —o
+sin Supabase configurado— se guardan en `localStorage` y la app lo indica en el
+propio panel. Los presets locales no se migran solos a la cuenta al iniciar
+sesión.
+
 ## Estructura
 
 ```
-app/                  rutas (App Router): landing y /director
-components/           UI: cámara, overlay de guías, controles, sugerencias
+app/                  rutas (App Router): landing, /director y /auth/callback
+components/           UI: cámara, overlay de guías, controles, sugerencias,
+                      cuenta y presets
 lib/ai/               motor de dirección — es la capa reutilizable en móvil
   mediapipe.ts        carga de los landmarkers (pose + rostro)
   subject.ts          landmarks → métricas de encuadre
@@ -70,7 +83,8 @@ lib/ai/               motor de dirección — es la capa reutilizable en móvil
   crop.ts             recorte de entrega según la plataforma
   engine.ts           combina reglas + estabiliza sugerencias
   presets.ts          plataformas, composiciones y ajustes
-lib/hooks/            useCamera, useFrameAnalysis, useSettings
+lib/hooks/            useCamera, useFrameAnalysis, useSettings,
+                      useSupabaseSession
 lib/supabase/         cliente, tipos y queries de presets
 scripts/              copia de binarios WASM a public/
 supabase/             esquema SQL
@@ -102,5 +116,4 @@ inmediatamente: no se guarda ni se transmite.
 - [x] Motor de reglas: tercios, distancia, centrado, aire, ángulo de cámara
 - [x] Histograma → sugerencias de iluminación (contraluz, quemados, lateral)
 - [x] Overlay en vivo con guías y panel de sugerencias
-- [ ] Auth de Supabase + presets guardados en la nube (la capa de datos ya está;
-      falta la UI de login y de gestión de presets)
+- [x] Auth de Supabase (enlace mágico) + presets guardados y sincronizados

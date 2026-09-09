@@ -2,18 +2,23 @@
 
 import { useEffect, useState } from "react";
 
+import { AccountPanel } from "@/components/AccountPanel";
 import { CameraStage } from "@/components/CameraStage";
 import { ControlBar } from "@/components/ControlBar";
+import { PresetsPanel } from "@/components/PresetsPanel";
 import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
 import { useCamera } from "@/lib/hooks/useCamera";
 import { useFrameAnalysis } from "@/lib/hooks/useFrameAnalysis";
 import { useSettings } from "@/lib/hooks/useSettings";
+import { useSupabaseSession } from "@/lib/hooks/useSupabaseSession";
 
 /** Pantalla principal: cámara + análisis + sugerencias en vivo. */
 export function DirectorStudio() {
-  const { settings, update } = useSettings();
+  const { settings, setSettings, update } = useSettings();
   const camera = useCamera();
+  const auth = useSupabaseSession();
   const [showDebug, setShowDebug] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
 
   const { analysis, status, error, fps, poseLandmarks } = useFrameAnalysis({
     videoRef: camera.videoRef,
@@ -50,6 +55,34 @@ export function DirectorStudio() {
           onFlip={camera.flip}
           cameraReady={camera.status === "ready"}
         />
+
+        <section className="rounded-xl border border-white/10 bg-white/5">
+          <button
+            type="button"
+            onClick={() => setShowLibrary((current) => !current)}
+            aria-expanded={showLibrary}
+            className="flex w-full items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="text-[11px] uppercase tracking-wider text-white/50">
+              Cuenta y presets
+            </span>
+            <span aria-hidden className="text-xs text-white/40">
+              {showLibrary ? "−" : "+"}
+            </span>
+          </button>
+
+          {showLibrary ? (
+            <div className="flex flex-col gap-4 border-t border-white/10 p-4">
+              <AccountPanel auth={auth} />
+              <PresetsPanel
+                settings={settings}
+                onApply={setSettings}
+                sessionKey={auth.session?.user.id ?? "local"}
+                remote={Boolean(auth.session)}
+              />
+            </div>
+          ) : null}
+        </section>
       </section>
 
       <aside className="flex flex-col gap-4">
