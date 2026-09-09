@@ -79,6 +79,8 @@ sesión.
 app/                  rutas (App Router): landing, /director y /auth/callback
   icon.tsx            favicon generado por código (next/og), sin binarios
   apple-icon.tsx      ícono de pantalla de inicio en iOS/iPadOS
+  icons/[size]/       icono en 192/512 para el manifest de PWA (solo esos)
+  manifest.ts         "Añadir a pantalla de inicio" en Android/Chrome
   director/error.tsx  red de seguridad del estudio si algo revienta al render
   global-error.tsx    red de seguridad si falla el propio layout raíz
 components/           UI: cámara, HUD en vivo, overlay de guías, controles,
@@ -99,6 +101,7 @@ lib/hooks/            useCamera, useFrameAnalysis, useSettings,
                       useSupabaseSession, useVoiceCoach, useRecorder,
                       useSnapshot
 lib/dom.ts            utilidades de teclado/foco compartidas por los atajos
+lib/icon-design.tsx   diseño del icono, compartido por favicon/apple/manifest
 lib/supabase/         cliente, tipos y queries de presets
 scripts/              copia de binarios WASM a public/
 supabase/             esquema SQL
@@ -214,6 +217,17 @@ un botón cambia la plataforma a YouTube 16:9 con un clic), cuidado con el
 micrófono integrado (capta teclado y ventilador) y con la ventana a la
 espalda (contraluz, el error más común grabando desde el escritorio).
 
+## Instalar como app
+
+`app/manifest.ts` genera el manifest de PWA: en Android/Chrome aparece la
+opción "Añadir a pantalla de inicio", que abre el estudio (`start_url:
+"/director"`, no la landing) en modo `standalone`, sin la barra del
+navegador — como una app de cámara real. En iOS/iPadOS, Safari usa
+`apple-icon.tsx` y las etiquetas del layout para lo mismo; no hace falta un
+manifest ahí. Los iconos en 192/512 que pide el manifest (`app/icons/[size]`)
+comparten diseño con el favicon (`lib/icon-design.tsx`) y se generan también
+por código, prerenderizados en build con `generateStaticParams`.
+
 ## Si algo falla
 
 `app/director/error.tsx` es el *error boundary* de Next.js para el estudio:
@@ -241,3 +255,4 @@ anterior.
 - [x] Cuenta atrás antes de grabar + atajos de teclado (espacio, Esc)
 - [x] Captura de foto (miniatura) sin interrumpir la grabación de vídeo
 - [x] Favicon propio + error boundaries (estudio y layout raíz)
+- [x] Manifest de PWA: instalable en Android/Chrome, abre directo al estudio
