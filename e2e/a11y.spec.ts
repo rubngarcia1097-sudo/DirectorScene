@@ -27,9 +27,26 @@ test("el estudio no tiene violaciones con la cámara apagada", async ({ page }) 
 test("el estudio no tiene violaciones con la cámara encendida ni con los paneles abiertos", async ({
   page,
 }) => {
+  // Dos escaneos completos de axe-core (varios segundos cada uno bajo la
+  // carga acumulada de WASM/WebGL por software del resto de la suite) más
+  // encender la cámara y varias interacciones no caben con holgura en los
+  // 30 s por test que trae Playwright por defecto — el fallo real no era
+  // que ningún elemento se quedara inestable, sino el propio timeout del
+  // test agotándose a media espera (el mensaje de error solo mostraba la
+  // última acción pendiente en ese instante).
+  test.setTimeout(60_000);
+
   await page.goto("/director");
   await page.getByRole("button", { name: /Encender cámara/i }).click();
   await expect(page.locator("video")).toBeVisible();
+  // El vídeo aparece en cuanto arranca el stream, un instante antes de que
+  // la cámara quede "ready" del todo (lee capacidades, corrige el estado de
+  // frontal/trasera…) — mientras tanto "Cambiar frontal/trasera" sigue
+  // deshabilitado, con menos contraste a propósito. Sin esperar a que se
+  // habilite, el escaneo puede pillar ese instante y marcarlo como violación
+  // real cuando es solo el estado deshabilitado normal de una fracción de
+  // segundo.
+  await expect(page.getByRole("button", { name: /Cambiar frontal\/trasera/i })).toBeEnabled();
   await expectNoViolations(page);
 
   await page.getByRole("button", { name: /Calidad de grabación/i }).click();

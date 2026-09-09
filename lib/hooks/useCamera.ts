@@ -162,6 +162,18 @@ export function useCamera(): UseCameraResult {
         });
         setTorchSupported(hasTorch);
         setTorchOn(false); // el flash nunca arranca encendido al abrir la cámara
+
+        // El espejado depende de qué cámara quedó realmente activa, no de la
+        // que se pidió: al elegir una cámara concreta por deviceId (el
+        // desplegable, que puede listar varias traseras) nunca se pasa
+        // "facingMode", así que sin esto el estado quedaba con el de antes de
+        // elegir — la trasera podía quedar espejada igual que la frontal.
+        // getSettings().facingMode es lo que el navegador negoció de verdad;
+        // en escritorio casi nunca lo reporta, así que ahí se deja tal cual.
+        const negotiatedFacingMode = track.getSettings?.().facingMode;
+        if (negotiatedFacingMode === "user" || negotiatedFacingMode === "environment") {
+          setFacingMode(negotiatedFacingMode);
+        }
       }
 
       setStatus("ready");

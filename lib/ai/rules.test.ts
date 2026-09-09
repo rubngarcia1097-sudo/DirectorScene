@@ -4,7 +4,8 @@ import { test } from "vitest";
 import { computeCropRect } from "./crop";
 import { SuggestionStabilizer } from "./engine";
 import { evaluateFraming } from "./framing";
-import { analyzeLighting, evaluateLighting, scoreShot } from "./lighting";
+import { LightingBaseline, analyzeLighting, evaluateLighting, scoreShot } from "./lighting";
+import type { LightingMetrics } from "./types";
 import { PLATFORMS, SHOT_STYLE_LIST } from "./presets";
 import { extractSubject } from "./subject";
 import type { Landmark } from "./subject";
@@ -225,6 +226,79 @@ test("el histograma detecta contraluz", () => {
   assert.ok(metrics.subjectBrightness !== null);
   assert.ok(darkSubject.backgroundBrightness - darkSubject.subjectBrightness! > 0.18);
   assert.ok(ids(evaluateLighting(darkSubject)).includes("light-backlit"));
+});
+
+function lightingMetrics(overrides: Partial<LightingMetrics> = {}): LightingMetrics {
+  return {
+    brightness: 0.5,
+    contrast: 0.3,
+    clippedHighlights: 0,
+    crushedShadows: 0,
+    sideBalance: 0,
+    subjectBrightness: 0.4,
+    backgroundBrightness: 0.5,
+    warmth: 0,
+    ...overrides,
+  };
+}
+
+test("sin baseline, el contraluz se exige contra el umbral fijo de estudio", () => {
+  const leve = lightingMetrics({ backgroundBrightness: 0.6, subjectBrightness: 0.45 }); // gap 0.15
+  const fuerte = lightingMetrics({ backgroundBrightness: 0.65, subjectBrightness: 0.4 }); // gap 0.25
+
+  assert.ok(!ids(evaluateLighting(leve)).includes("light-backlit"));
+  assert.ok(ids(evaluateLighting(fuerte)).includes("light-backlit"));
+});
+
+test("LightingBaseline deja de avisar cuando ya se está en el mejor contraluz que da el espacio", () => {
+  const baseline = new LightingBaseline();
+  // Un hueco de 0.25 es peor que el umbral fijo (0.18): sin adaptación,
+  // avisaría en cada frame de toda la sesión aunque sea lo mejor que el
+  // usuario puede lograr con la luz que tiene.
+  const persistente = lightingMetrics({ backgroundBrightness: 0.65, subjectBrightness: 0.4 });
+
+  const primero = evaluateLighting(persistente, baseline);
+  assert.ok(ids(primero).includes("light-backlit"));
+
+  // Tras observar el mismo hueco varias veces, el umbral se adapta a ese
+  // "mejor logrado" (+ margen) y deja de avisar sobre lo que ya es su techo.
+  let ultimo = primero;
+  for (let i = 0; i < 5; i += 1) {
+    ultimo = evaluateLighting(persistente, baseline);
+  }
+  assert.ok(!ids(ultimo).includes("light-backlit"));
+});
+
+test("LightingBaseline sigue avisando si el contraluz empeora respecto a lo ya logrado", () => {
+  const baseline = new LightingBaseline();
+  const logrado = lightingMetrics({ backgroundBrightness: 0.6, subjectBrightness: 0.4 }); // gap 0.2
+  for (let i = 0; i < 5; i += 1) evaluateLighting(logrado, baseline);
+  assert.ok(!ids(evaluateLighting(logrado, baseline)).includes("light-backlit"));
+
+  const peor = lightingMetrics({ backgroundBrightness: 0.8, subjectBrightness: 0.3 }); // gap 0.5
+  assert.ok(ids(evaluateLighting(peor, baseline)).includes("light-backlit"));
+});
+
+test("LightingBaseline nunca relaja el umbral por debajo del fijo cuando ya se cumple de sobra", () => {
+  const baseline = new LightingBaseline();
+  const buena = lightingMetrics({ backgroundBrightness: 0.5, subjectBrightness: 0.48 }); // gap 0.02
+  for (let i = 0; i < 5; i += 1) evaluateLighting(buena, baseline);
+
+  // Con la mejor luz posible ya muy por debajo del umbral fijo, un contraluz
+  // que antes habría pasado desapercibido (0.2) debe seguir avisando: el
+  // espacio del usuario demuestra que puede hacerlo mejor.
+  const peorQueSuMejor = lightingMetrics({ backgroundBrightness: 0.6, subjectBrightness: 0.4 });
+  assert.ok(ids(evaluateLighting(peorQueSuMejor, baseline)).includes("light-backlit"));
+});
+
+test("LightingBaseline ignora frames casi negros o quemados al aprender el mejor logrado", () => {
+  const baseline = new LightingBaseline();
+  // Frame degenerado: todo oscuro, el hueco es pequeño mecánicamente, no
+  // porque la luz sea buena — no debería enseñarle nada al baseline.
+  const degenerado = lightingMetrics({ brightness: 0.05, backgroundBrightness: 0.06, subjectBrightness: 0.04 });
+  for (let i = 0; i < 5; i += 1) baseline.observe(degenerado);
+
+  assert.equal(baseline.backlitThreshold(), 0.18);
 });
 
 test("la puntuación es 0 sin sujeto y baja con cada sugerencia", () => {

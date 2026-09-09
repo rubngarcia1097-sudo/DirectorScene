@@ -227,6 +227,32 @@ En cada frame (unos 15 por segundo, no todos):
 El frame reducido que se usa para el histograma (160 px de ancho) se descarta
 inmediatamente: no se guarda ni se transmite.
 
+### Contraluz: se adapta a la luz que el usuario realmente tiene
+
+No todo el mundo graba con un set de iluminación profesional. El aviso de
+contraluz comparaba el hueco de brillo entre fondo y sujeto contra un umbral
+fijo (0.18): si el espacio del usuario tiene una ventana detrás que no se
+puede mover, ese hueco no baja de ahí en toda la sesión, y el aviso se
+vuelve un ruido constante e irresoluble en vez de una instrucción útil.
+
+`LightingBaseline` (`lib/ai/lighting.ts`) recuerda el mejor contraluz
+logrado en los últimos 30 s (ventana móvil, no toda la sesión: un espacio
+genuinamente distinto más adelante puede volver a exigir el estándar alto).
+El umbral efectivo es `max(0.18, mejor_logrado + margen)`:
+
+- Si el espacio da para menos de 0.18 de hueco, el umbral sigue en 0.18 —
+  nada cambia para quien ya tiene buena luz.
+- Si el mejor que el usuario puede lograr es peor que eso, el umbral sube
+  hasta ahí: dejar de avisar sobre lo que ya es su techo, sin fingir que
+  el contraluz desapareció.
+- Si empeora respecto a lo ya logrado (se aleja más de la ventana, apagan
+  una luz), el aviso vuelve — la adaptación es al *mejor* disponible, no
+  una licencia para cualquier cosa.
+
+Los frames casi negros o quemados no cuentan para aprender el "mejor
+logrado": un hueco pequeño ahí es un artefacto de la mala exposición, no una
+luz genuinamente pareja.
+
 ### Estilo de plano y plantillas rápidas
 
 `targetFill`/`targetHeadroom` (qué tan cerca de cámara y con cuánto aire debe
@@ -376,6 +402,19 @@ guías del overlay, como PNG. Útil para elegir una miniatura sin grabar un
 clip entero. No comparte canvas con `useRecorder` ni interfiere con una
 grabación en curso — se puede capturar una foto mientras se está grabando.
 
+### Espejado: solo la cámara frontal
+
+`mirrored` decide el espejado, pero no se fía de qué cámara se **pidió**
+sino de la que la pista de vídeo negoció de verdad
+(`track.getSettings().facingMode`). Antes se derivaba del propio estado
+interno de "frontal/trasera" de `useCamera`, que solo se actualizaba al usar
+el botón **Cambiar frontal/trasera** — elegir una cámara concreta por
+`deviceId` (el desplegable, que puede listar varias traseras en un móvil)
+nunca lo tocaba, así que una trasera elegida así podía quedar espejada
+exactamente igual que la frontal. `e2e/camera.spec.ts` fuerza
+`facingMode: "environment"` en `getSettings()` (la cámara falsa de Chromium
+no reporta ninguno) para cubrir el caso.
+
 ## Calidad según el dispositivo
 
 No hay forma fiable de leer el "modelo" de un móvil desde el navegador (y los
@@ -512,3 +551,7 @@ anterior.
 - [x] Filtros de color (Cálido, Frío, B/N, Vívido) y ajuste manual de luz,
       aplicados a vista previa, análisis, grabación y foto
 - [x] "Configuración ideal" explícita en el panel de calidad de dispositivo
+- [x] Corregido: la cámara trasera podía salir espejada al elegirla por
+      deviceId (ahora se basa en el facingMode real de la pista)
+- [x] Aviso de contraluz adaptado a la mejor luz que el espacio del usuario
+      realmente permite, no a un estándar fijo de estudio

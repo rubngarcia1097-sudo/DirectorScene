@@ -1,6 +1,7 @@
 import { evaluateFraming } from "./framing";
 import type { FramingContext } from "./framing";
 import { evaluateLighting, scoreShot } from "./lighting";
+import type { LightingBaseline } from "./lighting";
 import { SEVERITY_ORDER } from "./presets";
 import type { DirectorSettings } from "./presets";
 import type {
@@ -75,6 +76,8 @@ export interface AnalysisInput {
   mirrored: boolean;
   latencyMs: number;
   stabilizer?: SuggestionStabilizer;
+  /** Adapta el aviso de contraluz a lo mejor que dé de sí el espacio del usuario. */
+  lightingBaseline?: LightingBaseline;
 }
 
 /** Une reglas de encuadre y de luz en un único resultado por frame. */
@@ -85,6 +88,7 @@ export function analyzeFrame({
   mirrored,
   latencyMs,
   stabilizer,
+  lightingBaseline,
 }: AnalysisInput): FrameAnalysis {
   const context: FramingContext = {
     platform: settings.platform,
@@ -97,7 +101,7 @@ export function analyzeFrame({
     ...evaluateFraming(subject, context),
     // Sin sujeto en cuadro las métricas de luz del "sujeto" no significan nada,
     // pero la exposición global sigue siendo útil.
-    ...evaluateLighting(lighting),
+    ...evaluateLighting(lighting, lightingBaseline),
   ];
 
   const stabilized = stabilizer ? stabilizer.update(raw) : raw;

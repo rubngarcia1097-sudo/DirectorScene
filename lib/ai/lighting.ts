@@ -104,8 +104,66 @@ export function analyzeLighting(
   };
 }
 
-/** Traduce las métricas de luz en instrucciones de dirección. */
-export function evaluateLighting(light: LightingMetrics): Suggestion[] {
+/** Umbral de contraluz de partida: por debajo de esto, no hace falta adaptar nada. */
+const BACKLIT_FIXED_THRESHOLD = 0.18;
+/** Margen sobre el mejor contraluz logrado: exige mantenerlo, no solo igualarlo por los pelos. */
+const BACKLIT_MARGIN = 0.04;
+/** Ventana de memoria: un espacio genuinamente distinto más adelante en la sesión reajusta el listón. */
+const BACKLIT_BASELINE_WINDOW_MS = 30_000;
+
+/**
+ * No todo el mundo graba con un set de iluminación profesional. Si el hueco
+ * entre fondo y sujeto nunca baja de cierto punto durante toda la sesión —
+ * una ventana detrás que no se puede mover, por ejemplo—, exigir el umbral
+ * fijo de estudio convierte "estás a contraluz" en un aviso permanente e
+ * irresoluble en vez de una instrucción útil.
+ *
+ * Esta clase recuerda el mejor contraluz logrado recientemente (ventana
+ * móvil de 30 s, no toda la sesión: así un espacio distinto más adelante
+ * puede volver a exigir el estándar alto) y el umbral efectivo nunca pide
+ * menos que eso — solo mantenerlo, nunca alcanzar un ideal que el espacio
+ * del usuario no puede dar. Nunca es más laxo que el umbral fijo cuando la
+ * mejor luz posible ya lo cumple de sobra.
+ */
+export class LightingBaseline {
+  private samples: { at: number; gap: number }[] = [];
+
+  constructor(private readonly windowMs: number = BACKLIT_BASELINE_WINDOW_MS) {}
+
+  /** Registra el contraluz de un frame con exposición razonable. */
+  observe(light: LightingMetrics, now: number = Date.now()): void {
+    if (light.subjectBrightness === null) return;
+    // Un frame casi negro o quemado no dice nada fiable del contraluz real:
+    // contaminaría el "mejor logrado" con un dato degenerado.
+    if (light.brightness < 0.1 || light.brightness > 0.9) return;
+
+    this.samples.push({ at: now, gap: light.backgroundBrightness - light.subjectBrightness });
+    const cutoff = now - this.windowMs;
+    while (this.samples.length > 0 && this.samples[0].at < cutoff) {
+      this.samples.shift();
+    }
+  }
+
+  /** Umbral efectivo de contraluz: se adapta hacia arriba, nunca hacia abajo del fijo. */
+  backlitThreshold(): number {
+    if (this.samples.length === 0) return BACKLIT_FIXED_THRESHOLD;
+    const best = Math.min(...this.samples.map((sample) => sample.gap));
+    return Math.max(BACKLIT_FIXED_THRESHOLD, best + BACKLIT_MARGIN);
+  }
+
+  reset(): void {
+    this.samples = [];
+  }
+}
+
+/**
+ * Traduce las métricas de luz en instrucciones de dirección.
+ *
+ * `baseline`, si se pasa, adapta el umbral de contraluz a lo mejor que el
+ * espacio del usuario haya dado de sí recientemente (ver `LightingBaseline`)
+ * en vez de exigir siempre el estándar fijo de estudio.
+ */
+export function evaluateLighting(light: LightingMetrics, baseline?: LightingBaseline): Suggestion[] {
   const suggestions: Suggestion[] = [];
 
   if (light.brightness < 0.22) {
@@ -126,18 +184,24 @@ export function evaluateLighting(light: LightingMetrics): Suggestion[] {
     });
   }
 
-  // Contraluz: el fondo brilla bastante más que el sujeto.
-  if (
-    light.subjectBrightness !== null &&
-    light.backgroundBrightness - light.subjectBrightness > 0.18
-  ) {
-    suggestions.push({
-      id: "light-backlit",
-      category: "iluminacion",
-      severity: "warn",
-      message: "Estás a contraluz: gírate para tener la ventana delante",
-      hint: "La luz principal debe venir de donde está la cámara, no de detrás de ti.",
-    });
+  // Contraluz: el fondo brilla bastante más que el sujeto. El umbral se
+  // calcula ANTES de registrar este frame en el baseline — si no, un frame
+  // siempre "aprueba" su propia comparación (a sí mismo + margen), y ni el
+  // peor contraluz llegaría a avisar ni una sola vez.
+  if (light.subjectBrightness !== null) {
+    const gap = light.backgroundBrightness - light.subjectBrightness;
+    const threshold = baseline?.backlitThreshold() ?? BACKLIT_FIXED_THRESHOLD;
+    baseline?.observe(light);
+
+    if (gap > threshold) {
+      suggestions.push({
+        id: "light-backlit",
+        category: "iluminacion",
+        severity: "warn",
+        message: "Estás a contraluz: gírate para tener la ventana delante",
+        hint: "La luz principal debe venir de donde está la cámara, no de detrás de ti.",
+      });
+    }
   }
 
   if (Math.abs(light.sideBalance) > 0.16) {

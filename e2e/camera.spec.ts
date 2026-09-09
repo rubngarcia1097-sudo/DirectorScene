@@ -84,3 +84,42 @@ test("el manual de uso se puede abrir y explica plantillas, colores y atajos", a
   await expect(page.getByText("Qué significan los colores")).toBeVisible();
   await expect(page.getByText(/Barra espaciadora: grabar o detener/)).toBeVisible();
 });
+
+test("una cámara que informa facingMode 'environment' no sale espejada", async ({ page }) => {
+  // La cámara falsa de Chromium no reporta facingMode (no es ni frontal ni
+  // trasera de verdad); se simula lo que sí reporta una trasera real para
+  // reproducir el bug: elegir una cámara por deviceId (el desplegable, que
+  // puede listar varias traseras) nunca actualizaba el estado "frontal/
+  // trasera" con la que la propia pista negoció, así que la trasera podía
+  // quedar espejada igual que la frontal.
+  await page.addInitScript(() => {
+    const original = MediaStreamTrack.prototype.getSettings;
+    MediaStreamTrack.prototype.getSettings = function (this: MediaStreamTrack) {
+      return { ...original.call(this), facingMode: "environment" };
+    };
+  });
+
+  await page.goto("/director");
+  await page.getByRole("button", { name: /Encender cámara/i }).click();
+  await expect(page.locator("video")).toBeVisible();
+
+  const transform = () =>
+    page.locator("video").evaluate((el) => getComputedStyle(el).transform);
+  // La corrección llega en un estado aparte, después de que getUserMedia()
+  // resuelva y se lea la pista — un poll evita la carrera con ese primer
+  // render, que todavía muestra el valor espejado por defecto.
+  await expect.poll(transform, { timeout: 10_000 }).toBe("none");
+});
+
+test("por defecto (sin facingMode reportado) la vista sigue espejada, como una cámara frontal", async ({
+  page,
+}) => {
+  await page.goto("/director");
+  await page.getByRole("button", { name: /Encender cámara/i }).click();
+  await expect(page.locator("video")).toBeVisible();
+
+  const transform = () =>
+    page.locator("video").evaluate((el) => getComputedStyle(el).transform);
+  // scaleX(-1) se representa como matrix(-1, 0, 0, 1, 0, 0).
+  await expect.poll(transform, { timeout: 10_000 }).toBe("matrix(-1, 0, 0, 1, 0, 0)");
+});

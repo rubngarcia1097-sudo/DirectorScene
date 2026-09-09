@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { computeCropRect, toCropSpace } from "@/lib/ai/crop";
 import { SuggestionStabilizer, analyzeFrame } from "@/lib/ai/engine";
 import { composeFilterCss } from "@/lib/ai/filters";
-import { EMPTY_LIGHTING, analyzeLighting } from "@/lib/ai/lighting";
+import { EMPTY_LIGHTING, LightingBaseline, analyzeLighting } from "@/lib/ai/lighting";
 import { loadVisionEngine } from "@/lib/ai/mediapipe";
 import type { VisionEngine } from "@/lib/ai/mediapipe";
 import { PLATFORMS } from "@/lib/ai/presets";
@@ -86,6 +86,7 @@ export function useFrameAnalysis({
 
     let cancelled = false;
     const stabilizer = new SuggestionStabilizer();
+    const lightingBaseline = new LightingBaseline();
 
     void loadVisionEngine()
       .then((engine) => {
@@ -189,6 +190,7 @@ export function useFrameAnalysis({
             mirrored: flip,
             latencyMs: performance.now() - startedAt,
             stabilizer,
+            lightingBaseline,
           }),
         );
 
