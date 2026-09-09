@@ -39,6 +39,10 @@ npm run build        # build de producción
 npm run fetch:models # descarga los modelos .task a public/mediapipe/models
 ```
 
+Cada push y pull request corre `npm test`, `lint`, `typecheck` y `build` en CI
+(`.github/workflows/ci.yml`) — el mismo checklist que conviene pasar en local
+antes de dar por buena una sesión.
+
 ## Configuración
 
 Copia `.env.example` a `.env.local`. Todo es opcional:
