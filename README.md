@@ -37,11 +37,42 @@ npm run lint         # ESLint (config de Next)
 npm run typecheck    # tsc --noEmit
 npm run build        # build de producción
 npm run fetch:models # descarga los modelos .task a public/mediapipe/models
+npm run test:e2e     # suite de humo con Playwright (ver más abajo)
 ```
 
-Cada push y pull request corre `npm test`, `lint`, `typecheck` y `build` en CI
-(`.github/workflows/ci.yml`) — el mismo checklist que conviene pasar en local
-antes de dar por buena una sesión.
+Cada push y pull request corre dos jobs en CI (`.github/workflows/ci.yml`):
+`npm test`, `lint`, `typecheck` y `build` — el mismo checklist que conviene
+pasar en local antes de dar por buena una sesión — y por separado la suite
+E2E de Playwright.
+
+## Pruebas de extremo a extremo
+
+`e2e/` cubre con un navegador real lo que antes solo se verificaba a mano en
+cada sesión: encender la cámara, grabar y descargar un clip, la cuenta atrás
+y sus atajos de teclado, capturar una foto sin interrumpir una grabación, el
+panel de calidad de dispositivo y el manifest de PWA. Corre contra un build
+de producción (`next build && next start`), con la cámara y el micrófono
+simulados por Chromium (`--use-fake-ui/device-for-media-stream`).
+
+```bash
+npx playwright install --with-deps chromium   # una vez, si no está instalado
+npm run fetch:models                          # modelos reales en local (ver abajo)
+npm run test:e2e
+```
+
+Un par de decisiones no evidentes, por si hace falta tocar esto:
+
+- Las rutas de modelo en `playwright.config.ts` apuntan a
+  `public/mediapipe/models/`, no al bucket de Google: un intento de carga que
+  nunca resuelve (por ejemplo, un 404 local a propósito) compite por el hilo
+  principal con los `setInterval` de la cuenta atrás y la ralentiza de forma
+  real — se detectó exactamente así durante el desarrollo de esta suite.
+- En CI, `workers: 1` y `retries: 2`: cada test carga su propio motor de
+  MediaPipe en un navegador sin GPU (WebGL por software); varios a la vez, o
+  varios en sucesión dentro del mismo proceso de navegador, acumulan trabajo
+  de fondo y generan una latencia variable — de menos de un segundo a bastante
+  más — antes de resolverse bien. Nunca se vio realmente bloqueado, solo
+  lento; los reintentos absorben esa variabilidad sin ocultar un fallo real.
 
 ## Configuración
 
@@ -105,6 +136,8 @@ lib/icon-design.tsx   diseño del icono, compartido por favicon/apple/manifest
 lib/supabase/         cliente, tipos y queries de presets
 scripts/              copia de binarios WASM a public/
 supabase/             esquema SQL
+e2e/                  suite de humo con Playwright (ver más abajo)
+playwright.config.ts  su configuración
 ```
 
 `lib/ai/` no depende de React ni del DOM salvo por los tipos de MediaPipe: es la
@@ -256,3 +289,4 @@ anterior.
 - [x] Captura de foto (miniatura) sin interrumpir la grabación de vídeo
 - [x] Favicon propio + error boundaries (estudio y layout raíz)
 - [x] Manifest de PWA: instalable en Android/Chrome, abre directo al estudio
+- [x] Suite E2E con Playwright (cámara, grabación, foto, PWA) corriendo en CI

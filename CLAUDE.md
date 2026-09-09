@@ -35,6 +35,9 @@ npm test           # Vitest (motor de reglas)
 npm run lint       # ESLint
 npm run typecheck  # tsc --noEmit
 npm run build      # build de producción
+npm run test:e2e   # Playwright (ver README: "Pruebas de extremo a extremo")
 ```
 
 Antes de dar por buena una sesión: `npm test && npm run lint && npm run build`.
+Si se toca cámara, grabación o navegación, correr también `npm run test:e2e`
+(necesita `npx playwright install --with-deps chromium` una vez).

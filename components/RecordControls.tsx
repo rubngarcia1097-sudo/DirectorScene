@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { isTypingTarget } from "@/lib/dom";
 import type { UseRecorderResult } from "@/lib/hooks/useRecorder";
@@ -33,12 +33,26 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
   const [withAudio, setWithAudio] = useState(true);
   const [countdownEnabled, setCountdownEnabled] = useState(true);
 
+  // `recorder` es un objeto nuevo en cada render (cambia con cada tick del
+  // cronómetro mientras se graba, varias veces por segundo). Si el efecto
+  // dependiera de él directamente, el listener se desmontaría y volvería a
+  // montar constantemente durante toda la grabación — una ventana de sobra
+  // para perder una tecla pulsada justo en mal momento. En vez de eso, el
+  // listener se registra una sola vez y lee siempre el valor más reciente a
+  // través de un ref actualizado en cada render.
+  const latestRef = useRef({ recorder, disabled, withAudio, countdownEnabled });
+  useEffect(() => {
+    latestRef.current = { recorder, disabled, withAudio, countdownEnabled };
+  });
+
   // Barra espaciadora graba/detiene, Esc cancela la cuenta atrás o descarta
   // el clip revisado — pensado para grabarse a uno mismo sin tener que
   // volver corriendo a tocar la pantalla.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (isTypingTarget(event.target)) return;
+
+      const { recorder, disabled, withAudio, countdownEnabled } = latestRef.current;
 
       if (event.code === "Space") {
         if (recorder.status === "idle" && !disabled) {
@@ -67,7 +81,7 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [countdownEnabled, disabled, recorder, withAudio]);
+  }, []);
 
   if (!recorder.supported) {
     return (
