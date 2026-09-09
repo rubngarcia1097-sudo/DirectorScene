@@ -6,9 +6,11 @@ import { AccountPanel } from "@/components/AccountPanel";
 import { CameraStage } from "@/components/CameraStage";
 import { ControlBar } from "@/components/ControlBar";
 import { DeviceQualityPanel } from "@/components/DeviceQualityPanel";
+import { HelpGuide } from "@/components/HelpGuide";
 import { PresetsPanel } from "@/components/PresetsPanel";
 import { QuickPresets } from "@/components/QuickPresets";
 import { RecordControls } from "@/components/RecordControls";
+import { ShotGuide } from "@/components/ShotGuide";
 import { SnapshotButton } from "@/components/SnapshotButton";
 import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
 import { buildDeviceProfile } from "@/lib/ai/device";
@@ -28,6 +30,7 @@ export function DirectorStudio() {
   const [showDebug, setShowDebug] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showQuality, setShowQuality] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   // El label de la cámara no siempre delata que es la integrada de una
   // laptop (a veces es tan genérico como "Camera"); el usuario lo confirma.
   const [forceLaptopCamera, setForceLaptopCamera] = useState(false);
@@ -91,6 +94,8 @@ export function DirectorStudio() {
           <RecordControls recorder={recorder} disabled={camera.status !== "ready"} />
           <SnapshotButton snapshot={snapshot} disabled={camera.status !== "ready"} />
         </div>
+
+        <HelpGuide expanded={showHelp} onToggle={() => setShowHelp((current) => !current)} />
 
         <DeviceQualityPanel
           profile={deviceProfile}
@@ -158,6 +163,8 @@ export function DirectorStudio() {
               : "Enciende la cámara para recibir indicaciones."
           }
         />
+
+        <ShotGuide shotStyle={settings.shotStyle} />
 
         <button
           type="button"

@@ -5,7 +5,7 @@ import { computeCropRect } from "./crop";
 import { SuggestionStabilizer } from "./engine";
 import { evaluateFraming } from "./framing";
 import { analyzeLighting, evaluateLighting, scoreShot } from "./lighting";
-import { PLATFORMS } from "./presets";
+import { PLATFORMS, SHOT_STYLE_LIST } from "./presets";
 import { extractSubject } from "./subject";
 import type { Landmark } from "./subject";
 import type { SubjectMetrics } from "./types";
@@ -270,5 +270,12 @@ test("los formatos cortos tienen tope de duración; YouTube normal no", () => {
     if (platform.maxDurationSec !== null) {
       assert.ok(platform.maxDurationSec > 0);
     }
+  }
+});
+
+test("cada estilo de plano trae guía técnica de posición y luz, no solo cifras", () => {
+  for (const style of SHOT_STYLE_LIST) {
+    assert.ok(style.guide.position.length > 0, `${style.id} sin guía de posición`);
+    assert.ok(style.guide.lighting.length > 0, `${style.id} sin guía de luz`);
   }
 });

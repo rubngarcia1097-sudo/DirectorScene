@@ -58,3 +58,29 @@ test("una plantilla rápida aplica plataforma, estilo de plano y guías de golpe
     page.getByRole("button", { name: "Solo avisos", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 });
+
+test("la guía técnica es fija y cambia con el estilo de plano, no con lo que detecte el motor", async ({
+  page,
+}) => {
+  await page.goto("/director");
+  await page.getByRole("button", { name: /Encender cámara/i }).click();
+  await expect(page.locator("video")).toBeVisible();
+
+  await expect(page.getByText("Guía técnica · Hablas a cámara")).toBeVisible();
+  await expect(page.getByText(/Cámara a la altura de los ojos/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Producto en mano", exact: true }).click();
+  await expect(page.getByText("Guía técnica · Producto en mano")).toBeVisible();
+  await expect(page.getByText(/Cámara a la altura del pecho/)).toBeVisible();
+});
+
+test("el manual de uso se puede abrir y explica plantillas, colores y atajos", async ({
+  page,
+}) => {
+  await page.goto("/director");
+
+  await page.getByRole("button", { name: /Guía de uso/i }).click();
+  await expect(page.getByText("Cómo funciona")).toBeVisible();
+  await expect(page.getByText("Qué significan los colores")).toBeVisible();
+  await expect(page.getByText(/Barra espaciadora: grabar o detener/)).toBeVisible();
+});

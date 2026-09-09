@@ -243,6 +243,36 @@ lo que el motor puede evaluar de verdad — encuadre del cuerpo y luz —; no ha
 detección de objetos, así que no "ve" si el producto en sí está bien
 encuadrado o iluminado, solo a quien lo sostiene.
 
+### Guía técnica fija (no solo avisos reactivos)
+
+Las sugerencias de `SuggestionPanel` son reactivas: aparecen y desaparecen
+según lo que detecta el motor frame a frame, y varias no explicaban *cómo*
+corregir el problema más allá del mensaje corto. Dos cambios en la misma
+dirección:
+
+- Se añadió `hint` (el texto en gris bajo el mensaje) a las sugerencias que no
+  lo tenían — `light-blown`, `light-crushed`, `light-flat` en
+  `lighting.ts`, y `framing-headroom-low`, `framing-camera-high/low`,
+  `framing-safe-bottom/right` en `framing.ts` — con el "cómo" técnico, no
+  solo el "qué" (p. ej. "acerca una segunda fuente de luz suave del lado
+  contrario" en vez de solo "sube la luz de relleno").
+- `ShotGuide` (`components/ShotGuide.tsx`) muestra, bajo el panel de
+  sugerencias, la `guide` de `SHOT_STYLES` — posición de cámara y de luz
+  recomendadas para el estilo elegido. A diferencia del resto del panel, esto
+  **no es reactivo**: no depende de lo que detecte el motor en el frame
+  actual, es la referencia fija de "así se supone que se vea esto", visible
+  todo el tiempo mientras se prepara la toma.
+
+### Manual de uso
+
+`components/HelpGuide.tsx` es un manual dentro de la propia app (sección
+plegable "Guía de uso", igual que "Cuenta y presets"): qué hace
+DirectorScene, cómo empezar, qué significa cada color de severidad, cuándo
+usar cada plantilla, un glosario de términos técnicos (contraluz, zona
+segura, aire sobre la cabeza...), los atajos de teclado y el recordatorio de
+privacidad. Pensado para quien abre la herramienta por primera vez y no va a
+leer este README.
+
 ## Instrucción principal y voz
 
 Mientras se graba no se puede leer el panel lateral: `LiveHud` muestra la
@@ -434,3 +464,6 @@ anterior.
 - [x] Grabación con fallback a MP4/H.264 para Safari (antes solo WebM)
 - [x] Estilo de plano (hablas a cámara / producto en mano) y plantillas
       rápidas por tipo de contenido (TikTok, TikTok Shop, Reels)
+- [x] Guía técnica fija (posición y luz) por estilo de plano + hints
+      accionables en todas las sugerencias de luz/encuadre
+- [x] Manual de uso dentro de la app ("Guía de uso")

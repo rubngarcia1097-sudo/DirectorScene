@@ -85,6 +85,17 @@ export interface ShotStyle {
   targetFill: [number, number];
   /** Aire sobre la cabeza recomendado (fracción del alto). */
   targetHeadroom: [number, number];
+  /**
+   * Guía técnica fija: posición de cámara y de luz recomendadas para este
+   * estilo. A diferencia de las sugerencias en vivo (`framing.ts`,
+   * `lighting.ts`), esto no aparece y desaparece según lo que detecte el
+   * motor frame a frame — es referencia estable que se puede consultar
+   * antes o durante la grabación, no solo un aviso cuando algo falla.
+   */
+  guide: {
+    position: string[];
+    lighting: string[];
+  };
 }
 
 export const SHOT_STYLES: Record<ShotStyleId, ShotStyle> = {
@@ -96,6 +107,18 @@ export const SHOT_STYLES: Record<ShotStyleId, ShotStyle> = {
     // por defecto no cambia para quien no toca este ajuste.
     targetFill: [0.55, 0.85],
     targetHeadroom: [0.04, 0.14],
+    guide: {
+      position: [
+        "Cámara a la altura de los ojos: ni por encima (te ves desde arriba) ni por debajo (contrapicado).",
+        "Distancia: 40–60 cm de la cámara — plano medio corto, pecho y cabeza dentro del cuadro, con un poco de aire arriba.",
+        "Mira al objetivo de la cámara, no a tu propia imagen en pantalla, para simular contacto visual con quien ve el vídeo.",
+      ],
+      lighting: [
+        "La luz principal debe venir de donde está la cámara (de frente), nunca de detrás de ti.",
+        "Una fuente suave a unos 45° de tu cara (ventana con luz indirecta o un aro de luz) reduce sombras duras sin aplanar el rostro.",
+        "Evita luz cenital directa (un foco justo encima): marca sombras bajo los ojos y la nariz.",
+      ],
+    },
   },
   "product-demo": {
     id: "product-demo",
@@ -104,6 +127,18 @@ export const SHOT_STYLES: Record<ShotStyleId, ShotStyle> = {
       "Unboxing o demo de producto (TikTok Shop) — plano más abierto para que quepan tus manos y lo que enseñas.",
     targetFill: [0.35, 0.65],
     targetHeadroom: [0.06, 0.2],
+    guide: {
+      position: [
+        "Cámara a la altura del pecho, apuntando ligeramente hacia abajo — que se vea bien el producto en tus manos, no solo tu cara.",
+        "Distancia: 40–70 cm — deja espacio para que quepan tu torso, tus manos y el producto sin cortarlo al moverlo.",
+        "Usa un trípode o apoya el móvil: sostenerlo con una mano mientras manipulas el producto con la otra genera temblor.",
+      ],
+      lighting: [
+        "Luz principal de frente y difusa (un aro de luz o una ventana grande) — evita sombras duras sobre el producto.",
+        "Si el producto es reflectante (vidrio, metal, pantalla), evita luz directa muy intensa: se refleja y quema los detalles.",
+        "Si el producto proyecta sombra sobre sí mismo al girarlo, acerca una segunda fuente de luz suave del lado contrario.",
+      ],
+    },
   },
 };
 

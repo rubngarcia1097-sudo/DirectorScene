@@ -122,6 +122,7 @@ export function evaluateLighting(light: LightingMetrics): Suggestion[] {
       category: "iluminacion",
       severity: "warn",
       message: "Hay zonas quemadas: baja la exposición o aléjate de la luz directa",
+      hint: "Si grabas cerca de una ventana con sol directo, gírate 90° o corre una cortina fina: la luz sigue entrando pero sin quemar.",
     });
   }
 
@@ -158,6 +159,7 @@ export function evaluateLighting(light: LightingMetrics): Suggestion[] {
       category: "iluminacion",
       severity: "info",
       message: "Las sombras están muy cerradas: sube la luz de relleno",
+      hint: "Añade una segunda fuente de luz más tenue en el lado con sombra, o refleja la luz principal con una superficie clara.",
     });
   }
 
@@ -167,6 +169,7 @@ export function evaluateLighting(light: LightingMetrics): Suggestion[] {
       category: "iluminacion",
       severity: "info",
       message: "Imagen plana: separa el fondo o añade una luz lateral",
+      hint: "Aleja al sujeto al menos un metro de la pared del fondo, o añade una luz de contorno detrás para separarlo visualmente.",
     });
   }
 

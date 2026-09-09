@@ -84,6 +84,7 @@ export function evaluateFraming(
         category: "encuadre",
         severity: "warn",
         message: "Baja la cámara o agáchate: estás cortando la cabeza",
+        hint: "Deja un margen de aire equivalente a un dedo entre la parte alta de la cabeza y el borde del cuadro.",
       });
     } else if (subject.headTop > maxHead) {
       suggestions.push({
@@ -104,6 +105,7 @@ export function evaluateFraming(
         category: "encuadre",
         severity: "info",
         message: "La cámara está muy alta: bájala a la altura de tus ojos",
+        hint: "Apunta el objetivo hacia la línea de tus ojos, no hacia la coronilla: un ángulo cenital deforma y empequeñece.",
       });
     } else if (subject.eyeLine.y < 0.18) {
       suggestions.push({
@@ -111,6 +113,7 @@ export function evaluateFraming(
         category: "encuadre",
         severity: "info",
         message: "La cámara está muy baja: súbela a la altura de tus ojos",
+        hint: "Un contrapicado (cámara por debajo de los ojos) exagera la barbilla y la nariz.",
       });
     }
   }
@@ -148,6 +151,7 @@ export function evaluateFraming(
       category: "encuadre",
       severity: "info",
       message: `Sube el encuadre: la UI de ${preset.label} tapa la parte baja`,
+      hint: `Deja libre el ${Math.round(safe.bottom * 100)}% inferior del cuadro: ahí van la descripción y los botones de ${preset.label}.`,
     });
   }
   if (subject.center.x > 1 - safe.right) {
@@ -156,6 +160,7 @@ export function evaluateFraming(
       category: "encuadre",
       severity: "warn",
       message: `Los botones de ${preset.label} te tapan por la derecha`,
+      hint: `Deja libre el ${Math.round(safe.right * 100)}% derecho del cuadro, o cambia a composición centrada.`,
     });
   }
 
