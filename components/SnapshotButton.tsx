@@ -33,7 +33,7 @@ export function SnapshotButton({ snapshot, disabled }: SnapshotButtonProps) {
           type="button"
           onClick={snapshot.discard}
           aria-label="Descartar foto"
-          className="text-xs text-white/40 hover:text-white/80"
+          className="text-xs text-white/60 hover:text-white/80"
         >
           ✕
         </button>

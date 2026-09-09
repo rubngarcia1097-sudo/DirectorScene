@@ -14,6 +14,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Binarios y loaders de MediaPipe copiados por scripts/copy-mediapipe-wasm.mjs.
     "public/mediapipe/**",
+    // Generados al correr `npm run test:e2e` (ver .gitignore); sin esto,
+    // el bundle del trace viewer de Playwright revienta el lint.
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

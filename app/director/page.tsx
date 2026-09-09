@@ -13,9 +13,9 @@ export default function DirectorPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-6 px-4 py-6">
       <header className="flex items-center justify-between">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          DirectorScene
-        </Link>
+        <h1 className="text-sm font-semibold tracking-tight">
+          <Link href="/">DirectorScene</Link>
+        </h1>
         <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] text-white/60">
           El vídeo no sale de tu navegador
         </span>

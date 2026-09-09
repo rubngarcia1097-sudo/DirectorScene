@@ -56,7 +56,7 @@ export function DeviceQualityPanel({
               : "Enciende la cámara para detectarla"}
           </span>
         </span>
-        <span aria-hidden className="shrink-0 text-xs text-white/40">
+        <span aria-hidden className="shrink-0 text-xs text-white/60">
           {expanded ? "−" : "+"}
         </span>
       </button>
@@ -71,11 +71,11 @@ export function DeviceQualityPanel({
           ) : (
             <>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/70">
-                <dt className="text-white/40">Fuente</dt>
+                <dt className="text-white/60">Fuente</dt>
                 <dd className="text-right">{SOURCE_LABELS[profile.sourceKind]}</dd>
-                <dt className="text-white/40">Resolución</dt>
+                <dt className="text-white/60">Resolución</dt>
                 <dd className="text-right">{profile.resolutionLabel}</dd>
-                <dt className="text-white/40">fps de grabación</dt>
+                <dt className="text-white/60">fps de grabación</dt>
                 <dd className="text-right">{profile.recommendedFrameRate}</dd>
               </dl>
 

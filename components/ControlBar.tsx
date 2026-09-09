@@ -48,12 +48,12 @@ export function ControlBar({
               onClick={() => onChange("platform", platform.id)}
             >
               {platform.label}{" "}
-              <span className="text-[10px] opacity-60">{platform.aspectLabel}</span>
+              <span className="text-[10px] opacity-90">{platform.aspectLabel}</span>
             </Chip>
           ))}
         </div>
         {platformLocked ? (
-          <p className="text-[10px] text-white/35">
+          <p className="text-[10px] text-white/60">
             Fijada mientras grabas.
           </p>
         ) : null}
@@ -154,7 +154,7 @@ export function ControlBar({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[11px] uppercase tracking-wider text-white/40">
+      <span className="text-[11px] uppercase tracking-wider text-white/60">
         {label}
       </span>
       {children}

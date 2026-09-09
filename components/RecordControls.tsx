@@ -85,7 +85,7 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
 
   if (!recorder.supported) {
     return (
-      <p className="text-[11px] text-white/40">
+      <p className="text-[11px] text-white/60">
         Este navegador no puede grabar vídeo localmente.
       </p>
     );
@@ -232,7 +232,7 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
       </div>
 
       {!disabled ? (
-        <p className="text-[10px] text-white/30">
+        <p className="text-[10px] text-white/60">
           Barra espaciadora: grabar/detener · Esc: cancelar o descartar
         </p>
       ) : null}

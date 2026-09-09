@@ -74,6 +74,29 @@ Un par de decisiones no evidentes, por si hace falta tocar esto:
   más — antes de resolverse bien. Nunca se vio realmente bloqueado, solo
   lento; los reintentos absorben esa variabilidad sin ocultar un fallo real.
 
+## Accesibilidad
+
+`e2e/a11y.spec.ts` pasa [axe-core](https://github.com/dequelabs/axe-core) (vía
+`@axe-core/playwright`) sobre los mismos estados reales que cubre el resto de
+la suite E2E: landing, estudio con la cámara apagada/encendida, paneles
+desplegados (calidad de dispositivo, módulo de laptop, cuenta y presets),
+grabando, clip listo con el reproductor de vídeo, y foto capturada. Muchas
+violaciones solo existen en esos estados interactivos, no en el marcado
+estático inicial.
+
+La auditoría encontró y corrigió dos problemas reales:
+
+- **Contraste de texto insuficiente** (WCAG 2.1 AA, ratio mínimo 4.5:1 en
+  texto normal): varios textos secundarios usaban opacidades de blanco
+  demasiado bajas (`text-white/30` a `text-white/40`, algunos por debajo de
+  2.6:1) sobre los fondos oscuros de la app (`#0a0a0a`, `#161616`) — el aviso
+  de atajos de teclado en `RecordControls`, las etiquetas `dt` de las
+  métricas de depuración, los datos de `DeviceQualityPanel`, etc. Se subieron
+  a `text-white/60` o más (ratio ≥ 5:1 en ambos fondos).
+- **Falta de `<h1>`** en `/director`: la cabecera renderizaba "DirectorScene"
+  como un `<Link>` suelto, sin encabezado. Ahora el enlace vive dentro de un
+  `<h1>`, igual que en la landing.
+
 ## Configuración
 
 Copia `.env.example` a `.env.local`. Todo es opcional:
@@ -290,3 +313,4 @@ anterior.
 - [x] Favicon propio + error boundaries (estudio y layout raíz)
 - [x] Manifest de PWA: instalable en Android/Chrome, abre directo al estudio
 - [x] Suite E2E con Playwright (cámara, grabación, foto, PWA) corriendo en CI
+- [x] Auditoría de accesibilidad con axe-core (contraste WCAG AA, encabezados)

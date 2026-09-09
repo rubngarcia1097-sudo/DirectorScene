@@ -125,7 +125,7 @@ export function DirectorStudio() {
             <span className="text-[11px] uppercase tracking-wider text-white/50">
               Cuenta y presets
             </span>
-            <span aria-hidden className="text-xs text-white/40">
+            <span aria-hidden className="text-xs text-white/60">
               {showLibrary ? "−" : "+"}
             </span>
           </button>
@@ -159,7 +159,7 @@ export function DirectorStudio() {
         <button
           type="button"
           onClick={() => setShowDebug((current) => !current)}
-          className="self-start text-[11px] uppercase tracking-wider text-white/40 hover:text-white/70"
+          className="self-start text-[11px] uppercase tracking-wider text-white/60 hover:text-white/70"
         >
           {showDebug ? "Ocultar métricas" : "Ver métricas"}
         </button>
@@ -192,7 +192,7 @@ export function DirectorStudio() {
           </dl>
         ) : null}
 
-        <p className="mt-auto text-[11px] leading-relaxed text-white/40">
+        <p className="mt-auto text-[11px] leading-relaxed text-white/60">
           El análisis corre íntegramente en tu dispositivo con MediaPipe. Ningún
           frame se envía a un servidor ni se almacena.
         </p>
@@ -204,7 +204,7 @@ export function DirectorStudio() {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <dt className="text-white/40">{label}</dt>
+      <dt className="text-white/60">{label}</dt>
       <dd className="text-right tabular-nums">{value}</dd>
     </>
   );

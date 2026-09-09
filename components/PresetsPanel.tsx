@@ -100,7 +100,7 @@ export function PresetsPanel({
       </form>
 
       {presets.length === 0 ? (
-        <p className="text-[11px] text-white/40">
+        <p className="text-[11px] text-white/60">
           Todavía no has guardado ningún preset.
         </p>
       ) : (
@@ -118,7 +118,7 @@ export function PresetsPanel({
                 <span className="block truncate text-xs font-medium">
                   {preset.name}
                 </span>
-                <span className="block text-[10px] text-white/40">
+                <span className="block text-[10px] text-white/60">
                   {PLATFORMS[preset.settings.platform]?.label ?? "—"}
                 </span>
               </button>
@@ -136,7 +136,7 @@ export function PresetsPanel({
         </ul>
       )}
 
-      <p className="text-[10px] text-white/35">
+      <p className="text-[10px] text-white/60">
         {remote
           ? "Sincronizados en tu cuenta."
           : "Guardados solo en este navegador."}
