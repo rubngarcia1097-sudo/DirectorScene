@@ -6,9 +6,11 @@ import { AccountPanel } from "@/components/AccountPanel";
 import { CameraStage } from "@/components/CameraStage";
 import { ControlBar } from "@/components/ControlBar";
 import { PresetsPanel } from "@/components/PresetsPanel";
+import { RecordControls } from "@/components/RecordControls";
 import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
 import { useCamera } from "@/lib/hooks/useCamera";
 import { useFrameAnalysis } from "@/lib/hooks/useFrameAnalysis";
+import { useRecorder } from "@/lib/hooks/useRecorder";
 import { useSettings } from "@/lib/hooks/useSettings";
 import { useSupabaseSession } from "@/lib/hooks/useSupabaseSession";
 import { useVoiceCoach } from "@/lib/hooks/useVoiceCoach";
@@ -30,6 +32,13 @@ export function DirectorStudio() {
 
   useVoiceCoach({ analysis, enabled: settings.voice });
 
+  const recorder = useRecorder({
+    videoRef: camera.videoRef,
+    active: camera.status === "ready",
+    mirrored: camera.mirrored,
+    platform: settings.platform,
+  });
+
   // Al salir de la pantalla cortamos el stream: la cámara no queda encendida.
   useEffect(() => camera.stop, [camera.stop]);
 
@@ -50,6 +59,11 @@ export function DirectorStudio() {
           onStart={() => void camera.start()}
         />
 
+        <RecordControls
+          recorder={recorder}
+          disabled={camera.status !== "ready"}
+        />
+
         <ControlBar
           settings={settings}
           onChange={update}
@@ -58,6 +72,7 @@ export function DirectorStudio() {
           onSelectDevice={camera.selectDevice}
           onFlip={camera.flip}
           cameraReady={camera.status === "ready"}
+          platformLocked={recorder.status === "recording"}
         />
 
         <section className="rounded-xl border border-white/10 bg-white/5">

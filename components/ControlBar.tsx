@@ -14,6 +14,8 @@ interface ControlBarProps {
   onSelectDevice: (deviceId: string) => void;
   onFlip: () => void;
   cameraReady: boolean;
+  /** true mientras se graba: el recorte de plataforma queda fijado a esa toma. */
+  platformLocked?: boolean;
 }
 
 /** Controles de plataforma, composición y guías visuales. */
@@ -25,6 +27,7 @@ export function ControlBar({
   onSelectDevice,
   onFlip,
   cameraReady,
+  platformLocked = false,
 }: ControlBarProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -34,6 +37,7 @@ export function ControlBar({
             <Chip
               key={platform.id}
               active={settings.platform === platform.id}
+              disabled={platformLocked}
               onClick={() => onChange("platform", platform.id)}
             >
               {platform.label}{" "}
@@ -41,6 +45,11 @@ export function ControlBar({
             </Chip>
           ))}
         </div>
+        {platformLocked ? (
+          <p className="text-[10px] text-white/35">
+            Fijada mientras grabas.
+          </p>
+        ) : null}
       </Field>
 
       <Field label="Composición">
@@ -99,7 +108,7 @@ export function ControlBar({
           <button
             type="button"
             onClick={onFlip}
-            disabled={!cameraReady}
+            disabled={!cameraReady || platformLocked}
             className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:border-white/40 hover:text-white disabled:opacity-40"
           >
             Cambiar frontal/trasera
@@ -144,18 +153,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Chip({
   active,
   onClick,
+  disabled = false,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={active}
-      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40 ${
         active
           ? "border-sky-400/60 bg-sky-400/15 text-sky-100"
           : "border-white/15 text-white/70 hover:border-white/40 hover:text-white"

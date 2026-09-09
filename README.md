@@ -74,7 +74,7 @@ sesión.
 ```
 app/                  rutas (App Router): landing, /director y /auth/callback
 components/           UI: cámara, HUD en vivo, overlay de guías, controles,
-                      sugerencias, cuenta y presets
+                      grabación, sugerencias, cuenta y presets
 lib/ai/               motor de dirección — es la capa reutilizable en móvil
   mediapipe.ts        carga de los landmarkers (pose + rostro)
   subject.ts          landmarks → métricas de encuadre
@@ -83,9 +83,10 @@ lib/ai/               motor de dirección — es la capa reutilizable en móvil
   crop.ts             recorte de entrega según la plataforma
   engine.ts           combina reglas + estabiliza sugerencias
   voice.ts            qué instrucción dictar y cuándo callar
+  recording.ts        resolución de salida al grabar el clip
   presets.ts          plataformas, composiciones y ajustes
 lib/hooks/            useCamera, useFrameAnalysis, useSettings,
-                      useSupabaseSession, useVoiceCoach
+                      useSupabaseSession, useVoiceCoach, useRecorder
 lib/supabase/         cliente, tipos y queries de presets
 scripts/              copia de binarios WASM a public/
 supabase/             esquema SQL
@@ -122,6 +123,22 @@ misma instrucción antes de `REPEAT_MS`, deja un silencio mínimo (`MIN_GAP_MS`)
 al cambiar de instrucción, no interrumpe una frase en curso y confirma "Así
 está bien" una sola vez al corregir el encuadre, no en cada frame.
 
+## Grabar el clip
+
+El botón **Grabar clip** no captura el stream crudo de la cámara: redibuja
+cada frame del `<video>` en vivo sobre un `<canvas>` recortado y espejado
+exactamente como lo ve el usuario, y grava ese canvas con `MediaRecorder`
+(`canvas.captureStream()`). El resultado sale ya en el aspecto de la
+plataforma elegida (9:16 o 16:9), sin las guías del overlay.
+
+- El audio es opcional (checkbox "Con audio"): pide el micrófono solo al
+  pulsar grabar, nunca antes. Si el permiso falla, se sigue grabando sin
+  audio con un aviso, en vez de bloquear la toma.
+- La plataforma queda fijada mientras se grava — cambiarla a mitad de toma
+  descoordinaría el recorte con lo que ya se grabó.
+- El clip vive en memoria (`Blob` + `URL.createObjectURL`) hasta que se
+  descarga o se descarta; nunca se sube a ningún sitio.
+
 ## Estado
 
 - [x] Captura de cámara + MediaPipe (pose y rostro)
@@ -130,3 +147,4 @@ está bien" una sola vez al corregir el encuadre, no en cada frame.
 - [x] Overlay en vivo con guías y panel de sugerencias
 - [x] Auth de Supabase (enlace mágico) + presets guardados y sincronizados
 - [x] Instrucción principal sobre el vídeo (HUD) y modo voz (Web Speech API)
+- [x] Grabar y descargar el clip ya recortado a la plataforma elegida
