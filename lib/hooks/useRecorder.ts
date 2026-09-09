@@ -61,15 +61,23 @@ export interface UseRecorderResult {
 const DEFAULT_FRAME_RATE = 30;
 const ELAPSED_TICK_MS = 200;
 
-const MIME_CANDIDATES = [
+// Safari (macOS y iOS) no soporta el contenedor WebM en MediaRecorder, solo
+// MP4/H.264: sin un candidato MP4 explícito, `find` no encuentra ninguno y el
+// código cae al `new MediaRecorder(combined)` sin `mimeType` — que también
+// funciona (el propio Safari elige su formato por defecto), pero deja la
+// preferencia real en manos del navegador en vez de en esta lista.
+export const MIME_CANDIDATES = [
   "video/webm;codecs=vp9,opus",
   "video/webm;codecs=vp8,opus",
   "video/webm;codecs=vp9",
   "video/webm;codecs=vp8",
   "video/webm",
+  "video/mp4;codecs=h264,aac",
+  "video/mp4;codecs=h264",
+  "video/mp4",
 ];
 
-function pickMimeType(): string | undefined {
+export function pickMimeType(): string | undefined {
   if (typeof MediaRecorder === "undefined") return undefined;
   return MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type));
 }

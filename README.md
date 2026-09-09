@@ -265,6 +265,14 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
   aparece un chip **Linterna** en los controles de cámara para usarla como
   luz de relleno — cierra el círculo con la sugerencia "falta luz" del motor
   de iluminación, en vez de dejarla en un simple aviso.
+- `pickMimeType()` (`lib/hooks/useRecorder.ts`) prueba primero WebM/VP9 y
+  cae a MP4/H.264 si el navegador no soporta ningún candidato WebM — el caso
+  de Safari, que no admite el contenedor WebM en `MediaRecorder`. Sin un
+  candidato MP4 explícito, esa búsqueda no encontraba nada y el código caía
+  al constructor sin `mimeType`, que también funciona pero deja la
+  preferencia real en manos del navegador. Es lógica pura y tiene su propio
+  test (`useRecorder.test.ts`, simulando `MediaRecorder.isTypeSupported`);
+  el resto del hook depende de cámara y canvas reales y lo cubre `e2e/`.
 
 ### Capturar una foto
 
@@ -394,3 +402,4 @@ anterior.
 - [x] Compartir clip/foto directamente en móvil (Web Share API con archivos)
 - [x] Service worker: la app y el motor de visión funcionan sin cobertura
 - [x] Cabeceras de seguridad (Permissions-Policy, X-Frame-Options, nosniff)
+- [x] Grabación con fallback a MP4/H.264 para Safari (antes solo WebM)
