@@ -127,6 +127,37 @@ sin Supabase configurado— se guardan en `localStorage` y la app lo indica en e
 propio panel. Los presets locales no se migran solos a la cuenta al iniciar
 sesión.
 
+## Desplegar
+
+Es un Next.js estándar: sin `vercel.json` ni configuración especial.
+
+1. Conecta el repo en [vercel.com/new](https://vercel.com/new) (o `vercel
+   deploy` desde la CLI). El build (`npm run build`) y el `postinstall` que
+   copia el WASM de MediaPipe corren solos.
+2. **Sin ninguna variable de entorno la app ya es funcional**: cámara,
+   dirección en vivo, grabación, foto y compartir funcionan igual; los
+   presets quedan en `localStorage` en vez de en la nube, y los modelos de
+   MediaPipe se sirven desde el bucket público de Google.
+3. Si quieres cuentas y presets sincronizados, crea un proyecto en
+   [supabase.com](https://supabase.com), corre `supabase/schema.sql` en su
+   editor SQL, y en Vercel define `NEXT_PUBLIC_SUPABASE_URL` y
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Luego, en el panel de Supabase
+   (*Authentication → URL Configuration → Redirect URLs*), añade
+   `https://<tu-dominio>/auth/callback` — sin este paso el enlace mágico
+   redirige pero Supabase rechaza el intercambio de sesión.
+4. Opcional: para no depender del bucket de Google en producción, sirve tú
+   los modelos. `npm run fetch:models` no corre solo en el build (los
+   modelos no se versionan, así que no tiene sentido bajarlos en cada
+   `npm install`) — hay que añadirlo a mano como *Build Command* en Vercel
+   (*Settings → Build & Development Settings*):
+   `npm run fetch:models && npm run build`. Luego define
+   `NEXT_PUBLIC_POSE_MODEL_URL`/`NEXT_PUBLIC_FACE_MODEL_URL` a
+   `/mediapipe/models/…`.
+
+`getUserMedia` exige HTTPS (o `localhost`); cualquier deploy de Vercel —
+producción o preview— ya lo cumple, así que no hace falta nada aparte para
+probar la cámara desde un móvil real apuntando a esa URL.
+
 ## Estructura
 
 ```
