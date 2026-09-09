@@ -1,5 +1,6 @@
 "use client";
 
+import { FILTER_PRESETS, FILTER_PRESET_LIST } from "@/lib/ai/filters";
 import { COMPOSITION_LIST, PLATFORM_LIST, SHOT_STYLES, SHOT_STYLE_LIST } from "@/lib/ai/presets";
 import type { DirectorSettings } from "@/lib/ai/presets";
 
@@ -88,6 +89,41 @@ export function ControlBar({
         <p className="text-[10px] text-white/60">
           {SHOT_STYLES[settings.shotStyle].description}
         </p>
+      </Field>
+
+      <Field label="Filtros">
+        <div className="flex flex-wrap gap-2">
+          {FILTER_PRESET_LIST.map((preset) => (
+            <Chip
+              key={preset.id}
+              active={settings.filter === preset.id}
+              onClick={() => onChange("filter", preset.id)}
+            >
+              {preset.label}
+            </Chip>
+          ))}
+        </div>
+        <p className="text-[10px] text-white/60">
+          {FILTER_PRESETS[settings.filter].description}
+        </p>
+
+        <label className="mt-1 flex items-center gap-2 text-xs text-white/60">
+          <span className="shrink-0">Ajuste de luz</span>
+          <input
+            type="range"
+            min={-1}
+            max={1}
+            step={0.05}
+            value={settings.lightBoost}
+            onChange={(event) => onChange("lightBoost", Number(event.target.value))}
+            className="w-full accent-white"
+            aria-label="Ajuste de luz"
+          />
+          <span className="w-9 shrink-0 text-right tabular-nums">
+            {settings.lightBoost > 0 ? "+" : ""}
+            {Math.round(settings.lightBoost * 100)}
+          </span>
+        </label>
       </Field>
 
       <Field label="Guías">

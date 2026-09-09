@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { GuideOverlay } from "@/components/GuideOverlay";
 import { LiveHud } from "@/components/LiveHud";
+import { composeFilterCss } from "@/lib/ai/filters";
 import type { DirectorSettings } from "@/lib/ai/presets";
 import type { Landmark } from "@/lib/ai/subject";
 import type { FrameAnalysis, SubjectMetrics } from "@/lib/ai/types";
@@ -64,6 +65,7 @@ export function CameraStage({
   }, [syncAspect, videoRef]);
 
   const active = cameraStatus === "ready";
+  const filterCss = composeFilterCss(settings.filter, settings.lightBoost);
 
   return (
     <div className="flex flex-col gap-3">
@@ -79,7 +81,10 @@ export function CameraStage({
           autoPlay
           muted
           className="h-full w-full object-contain"
-          style={{ transform: mirrored ? "scaleX(-1)" : undefined }}
+          style={{
+            transform: mirrored ? "scaleX(-1)" : undefined,
+            filter: filterCss || undefined,
+          }}
         />
 
         {active ? (

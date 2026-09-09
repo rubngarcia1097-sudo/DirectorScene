@@ -1,3 +1,4 @@
+import type { FilterPresetId } from "./filters";
 import type { Severity } from "./types";
 
 /** Plataformas soportadas. Cada una tiene relación de aspecto y zonas seguras propias. */
@@ -186,6 +187,10 @@ export interface DirectorSettings {
   minSeverity: Severity;
   /** Dictar en voz alta la instrucción principal. */
   voice: boolean;
+  /** Look de color aplicado a vista previa, análisis y grabación. */
+  filter: FilterPresetId;
+  /** Corrección manual de luz (-1..1); 0 no toca la imagen. */
+  lightBoost: number;
 }
 
 export const DEFAULT_SETTINGS: DirectorSettings = {
@@ -197,6 +202,8 @@ export const DEFAULT_SETTINGS: DirectorSettings = {
   showSkeleton: false,
   minSeverity: "info",
   voice: false,
+  filter: "none",
+  lightBoost: 0,
 };
 
 /**
@@ -226,13 +233,15 @@ export const QUICK_PRESETS: QuickPreset[] = [
       showSkeleton: false,
       minSeverity: "info",
       voice: true,
+      filter: "none",
+      lightBoost: 0,
     },
   },
   {
     id: "tiktok-shop",
     label: "TikTok Shop · Producto en mano",
     description:
-      "Unboxing o demo de producto — plano abierto para que quepan tus manos y lo que enseñas; solo avisos importantes para no interrumpir la demo.",
+      "Unboxing o demo de producto — plano abierto para que quepan tus manos y lo que enseñas; colores más vivos y solo avisos importantes para no interrumpir la demo.",
     settings: {
       platform: "tiktok",
       composition: "center",
@@ -242,6 +251,8 @@ export const QUICK_PRESETS: QuickPreset[] = [
       showSkeleton: false,
       minSeverity: "warn",
       voice: false,
+      filter: "vivid",
+      lightBoost: 0,
     },
   },
   {
@@ -257,6 +268,8 @@ export const QUICK_PRESETS: QuickPreset[] = [
       showSkeleton: false,
       minSeverity: "info",
       voice: true,
+      filter: "none",
+      lightBoost: 0,
     },
   },
 ];

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { computeCropRect, toCropSpace } from "@/lib/ai/crop";
 import { SuggestionStabilizer, analyzeFrame } from "@/lib/ai/engine";
+import { composeFilterCss } from "@/lib/ai/filters";
 import { EMPTY_LIGHTING, analyzeLighting } from "@/lib/ai/lighting";
 import { loadVisionEngine } from "@/lib/ai/mediapipe";
 import type { VisionEngine } from "@/lib/ai/mediapipe";
@@ -151,6 +152,12 @@ export function useFrameAnalysis({
         let lighting = EMPTY_LIGHTING;
         if (context) {
           context.save();
+          // El histograma lee el mismo look que ve y graba el usuario: si el
+          // filtro ya compensa la penumbra, la sugerencia de luz no debe
+          // seguir avisando sobre el frame crudo que nadie ve.
+          context.filter =
+            composeFilterCss(settingsRef.current.filter, settingsRef.current.lightBoost) ||
+            "none";
           if (flip) {
             context.translate(SAMPLE_WIDTH, 0);
             context.scale(-1, 1);

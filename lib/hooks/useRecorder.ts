@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { computeCropRect } from "@/lib/ai/crop";
+import { composeFilterCss } from "@/lib/ai/filters";
+import type { FilterPresetId } from "@/lib/ai/filters";
 import { PLATFORMS } from "@/lib/ai/presets";
 import type { PlatformId } from "@/lib/ai/presets";
 import { computeOutputSize } from "@/lib/ai/recording";
@@ -35,6 +37,10 @@ export interface UseRecorderOptions {
   active: boolean;
   mirrored: boolean;
   platform: PlatformId;
+  /** Look de color aplicado al lienzo de grabación, igual que en la vista previa. */
+  filter: FilterPresetId;
+  /** Corrección manual de luz (-1..1), igual que en la vista previa. */
+  lightBoost: number;
   /** fps de grabación; lo ideal es lo que la cámara realmente entrega (ver device.ts). */
   targetFrameRate?: number;
 }
@@ -119,6 +125,8 @@ export function useRecorder({
   active,
   mirrored,
   platform,
+  filter,
+  lightBoost,
   targetFrameRate = DEFAULT_FRAME_RATE,
 }: UseRecorderOptions): UseRecorderResult {
   const [status, setStatus] = useState<RecorderStatus>("idle");
@@ -137,6 +145,7 @@ export function useRecorder({
   const drawStateRef = useRef<{
     crop: ReturnType<typeof computeCropRect>;
     mirrored: boolean;
+    filterCss: string;
     lastDrawAt: number;
   } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -228,9 +237,15 @@ export function useRecorder({
         return;
       }
 
-      // Encuadre fijado al empezar: si cambian de plataforma a mitad de toma,
-      // la grabación en curso sigue con el recorte que tenía cuando arrancó.
-      drawStateRef.current = { crop, mirrored, lastDrawAt: 0 };
+      // Encuadre y look fijados al empezar: si cambian de plataforma o de
+      // filtro a mitad de toma, la grabación en curso sigue con lo que tenía
+      // cuando arrancó — igual que ya pasaba con el recorte.
+      drawStateRef.current = {
+        crop,
+        mirrored,
+        filterCss: composeFilterCss(filter, lightBoost),
+        lastDrawAt: 0,
+      };
 
       let audioTracks: MediaStreamTrack[] = [];
       if (withAudio) {
@@ -316,6 +331,7 @@ export function useRecorder({
         state.lastDrawAt = now;
 
         context.save();
+        context.filter = state.filterCss || "none";
         if (state.mirrored) {
           context.translate(outputWidth, 0);
           context.scale(-1, 1);
@@ -343,7 +359,17 @@ export function useRecorder({
         if (maxDurationMs !== null && elapsed >= maxDurationMs) stop();
       }, ELAPSED_TICK_MS);
     },
-    [cleanupTimers, mirrored, platform, stop, stopMic, targetFrameRate, videoRef],
+    [
+      cleanupTimers,
+      filter,
+      lightBoost,
+      mirrored,
+      platform,
+      stop,
+      stopMic,
+      targetFrameRate,
+      videoRef,
+    ],
   );
 
   const start = useCallback(

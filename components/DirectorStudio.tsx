@@ -60,6 +60,8 @@ export function DirectorStudio() {
     active: camera.status === "ready",
     mirrored: camera.mirrored,
     platform: settings.platform,
+    filter: settings.filter,
+    lightBoost: settings.lightBoost,
     targetFrameRate: deviceProfile?.recommendedFrameRate,
   });
 
@@ -67,6 +69,8 @@ export function DirectorStudio() {
     videoRef: camera.videoRef,
     mirrored: camera.mirrored,
     platform: settings.platform,
+    filter: settings.filter,
+    lightBoost: settings.lightBoost,
   });
 
   // Al salir de la pantalla cortamos el stream: la cámara no queda encendida.

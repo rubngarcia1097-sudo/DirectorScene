@@ -286,6 +286,28 @@ segura, aire sobre la cabeza...), los atajos de teclado y el recordatorio de
 privacidad. Pensado para quien abre la herramienta por primera vez y no va a
 leer este README.
 
+### Filtros y ajuste de luz
+
+`lib/ai/filters.ts` traduce un look (`FILTER_PRESETS`: Ninguno, Cálido, Frío,
+Blanco y negro, Vívido) y una corrección manual de luz (-1..1) a una única
+cadena `filter` de CSS/Canvas2D. Esa misma cadena se aplica en cuatro sitios
+a la vez, no solo en la vista previa:
+
+- El `<video>` de `CameraStage` (lo que ve quien graba).
+- El canvas de análisis en `useFrameAnalysis` — así el histograma de luz
+  reacciona a lo que de verdad se ve y se graba, no al frame crudo de la
+  cámara: si el ajuste de luz ya compensa una habitación oscura, la
+  sugerencia "Falta luz" no debería seguir avisando sobre un frame que nadie
+  ve.
+- El canvas de grabación (`useRecorder`) y el de foto (`useSnapshot`): el
+  look queda fijado al empezar cada grabación, igual que el recorte de
+  plataforma — cambiarlo a mitad de toma no debe alterar el clip ya en
+  marcha.
+
+El ajuste de luz es una corrección digital rápida (rango conservador,
+0.7×–1.35× de brillo) para salir del paso mientras se consigue luz de
+verdad — una lámpara, girarse hacia la ventana —, no un sustituto.
+
 ## Instrucción principal y voz
 
 Mientras se graba no se puede leer el panel lateral: `LiveHud` muestra la
@@ -363,14 +385,19 @@ cámara por lo que **realmente** negoció (`getCapabilities()` /
 `getSettings()` de la pista de vídeo): resolución máxima y fps entregados. Eso
 es, al final, lo único que determina la calidad del clip.
 
-Con la cámara encendida, el panel plegable **Calidad de grabación** muestra:
+Con la cámara encendida, el panel plegable **Calidad de grabación** abre con
+una **Configuración ideal para esta cámara** explícita en una frase
+("cámara trasera del móvil · salida en 1080p a 30 fps") en vez de dejar que
+se deduzca de una tabla — la propia resolución de salida (`MAX_OUTPUT_DIMENSION`
+en `lib/ai/recording.ts`) es siempre 1080p sin importar el dispositivo, así
+que vale la pena decirlo tal cual. Debajo:
 
 - Fuente detectada — trasera o frontal en móvil; en escritorio, webcam externa
   (por marca: Logitech, Elgato, Razer…), integrada (FaceTime, "Integrated
   Camera"…) o sin identificar si el label es demasiado genérico.
-- Resolución (SD/HD/Full HD/4K) y los **fps con los que se grabará el
-  clip** — nunca más de lo que la cámara entrega de verdad (`useRecorder`
-  ajusta `canvas.captureStream()` a ese valor).
+- Resolución detectada (SD/HD/Full HD/4K) y los **fps con los que se
+  grabará el clip** — nunca más de lo que la cámara entrega de verdad
+  (`useRecorder` ajusta `canvas.captureStream()` a ese valor).
 - Consejos concretos: acercarse con cámaras de baja resolución, usar la
   trasera del móvil en vez de la frontal, etc.
 
@@ -482,3 +509,6 @@ anterior.
 - [x] Manual de uso dentro de la app ("Guía de uso")
 - [x] Sugerencias al lado de la cámara desde tablet/escritorio (antes solo
       desde 1024px de ancho)
+- [x] Filtros de color (Cálido, Frío, B/N, Vívido) y ajuste manual de luz,
+      aplicados a vista previa, análisis, grabación y foto
+- [x] "Configuración ideal" explícita en el panel de calidad de dispositivo

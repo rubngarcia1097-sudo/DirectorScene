@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { computeCropRect } from "@/lib/ai/crop";
+import { composeFilterCss } from "@/lib/ai/filters";
+import type { FilterPresetId } from "@/lib/ai/filters";
 import { PLATFORMS } from "@/lib/ai/presets";
 import type { PlatformId } from "@/lib/ai/presets";
 import { computeOutputSize } from "@/lib/ai/recording";
@@ -18,6 +20,9 @@ export interface UseSnapshotOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   mirrored: boolean;
   platform: PlatformId;
+  /** Mismo look que la vista previa y la grabación de vídeo. */
+  filter: FilterPresetId;
+  lightBoost: number;
 }
 
 export interface UseSnapshotResult {
@@ -39,6 +44,8 @@ export function useSnapshot({
   videoRef,
   mirrored,
   platform,
+  filter,
+  lightBoost,
 }: UseSnapshotOptions): UseSnapshotResult {
   const [result, setResult] = useState<SnapshotResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +83,7 @@ export function useSnapshot({
     }
 
     context.save();
+    context.filter = composeFilterCss(filter, lightBoost) || "none";
     if (mirrored) {
       context.translate(width, 0);
       context.scale(-1, 1);
@@ -108,7 +116,7 @@ export function useSnapshot({
         sizeBytes: blob.size,
       });
     }, "image/png");
-  }, [mirrored, platform, videoRef]);
+  }, [filter, lightBoost, mirrored, platform, videoRef]);
 
   useEffect(
     () => () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import type { CameraSourceKind, DeviceProfile } from "@/lib/ai/device";
+import { MAX_OUTPUT_DIMENSION } from "@/lib/ai/recording";
 
 const SOURCE_LABELS: Record<CameraSourceKind, string> = {
   "movil-trasera": "Cámara trasera del móvil",
@@ -70,10 +71,20 @@ export function DeviceQualityPanel({
             </p>
           ) : (
             <>
+              <div className="rounded-lg border border-sky-400/30 bg-sky-400/10 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-200">
+                  Configuración ideal para esta cámara
+                </p>
+                <p className="mt-1 text-xs text-sky-100">
+                  {SOURCE_LABELS[profile.sourceKind]} · salida en {MAX_OUTPUT_DIMENSION}p a{" "}
+                  {profile.recommendedFrameRate} fps
+                </p>
+              </div>
+
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/70">
                 <dt className="text-white/60">Fuente</dt>
                 <dd className="text-right">{SOURCE_LABELS[profile.sourceKind]}</dd>
-                <dt className="text-white/60">Resolución</dt>
+                <dt className="text-white/60">Resolución detectada</dt>
                 <dd className="text-right">{profile.resolutionLabel}</dd>
                 <dt className="text-white/60">fps de grabación</dt>
                 <dd className="text-right">{profile.recommendedFrameRate}</dd>
