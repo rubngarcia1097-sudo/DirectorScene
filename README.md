@@ -78,7 +78,8 @@ sesión.
 ```
 app/                  rutas (App Router): landing, /director y /auth/callback
 components/           UI: cámara, HUD en vivo, overlay de guías, controles,
-                      grabación, sugerencias, cuenta y presets
+                      grabación, calidad de dispositivo, sugerencias,
+                      cuenta y presets
 lib/ai/               motor de dirección — es la capa reutilizable en móvil
   mediapipe.ts        carga de los landmarkers (pose + rostro)
   subject.ts          landmarks → métricas de encuadre
@@ -88,6 +89,7 @@ lib/ai/               motor de dirección — es la capa reutilizable en móvil
   engine.ts           combina reglas + estabiliza sugerencias
   voice.ts            qué instrucción dictar y cuándo callar
   recording.ts        resolución de salida al grabar el clip
+  device.ts           calidad de cámara y consejos según el dispositivo
   presets.ts          plataformas, composiciones y ajustes
 lib/hooks/            useCamera, useFrameAnalysis, useSettings,
                       useSupabaseSession, useVoiceCoach, useRecorder
@@ -143,6 +145,43 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
 - El clip vive en memoria (`Blob` + `URL.createObjectURL`) hasta que se
   descarga o se descarta; nunca se sube a ningún sitio.
 
+## Calidad según el dispositivo
+
+No hay forma fiable de leer el "modelo" de un móvil desde el navegador (y los
+user agents cada vez exponen menos por privacidad), así que en vez de adivinar
+"gama alta" o "gama media" por marketing, `lib/ai/device.ts` clasifica la
+cámara por lo que **realmente** negoció (`getCapabilities()` /
+`getSettings()` de la pista de vídeo): resolución máxima y fps entregados. Eso
+es, al final, lo único que determina la calidad del clip.
+
+Con la cámara encendida, el panel plegable **Calidad de grabación** muestra:
+
+- Fuente detectada — trasera o frontal en móvil; en escritorio, webcam externa
+  (por marca: Logitech, Elgato, Razer…), integrada (FaceTime, "Integrated
+  Camera"…) o sin identificar si el label es demasiado genérico.
+- Resolución (SD/HD/Full HD/4K) y los **fps con los que se grabará el
+  clip** — nunca más de lo que la cámara entrega de verdad (`useRecorder`
+  ajusta `canvas.captureStream()` a ese valor).
+- Consejos concretos: acercarse con cámaras de baja resolución, usar la
+  trasera del móvil en vez de la frontal, etc.
+
+`getUserMedia` pide 1920×1080 como resolución *ideal* (antes limitaba a
+720p): al ser un hint y no una exigencia, el navegador la negocia hacia abajo
+en cámaras más modestas sin romper nada, pero deja que las buenas entreguen lo
+que realmente tienen.
+
+### Módulo de cámara de laptop
+
+Cuando el label de la cámara delata una webcam integrada (o el usuario marca
+la casilla **"Uso la cámara integrada de mi laptop"** — el label a veces es
+tan genérico como "Camera" y no hay heurística que lo salve), aparece un
+bloque de consejos específico: subir la laptop a la altura de los ojos (las
+webcams integradas miran desde abajo), alejarse un brazo (su gran angular
+deforma la cara de cerca), pensar en horizontal (la laptop no gira, así que
+un botón cambia la plataforma a YouTube 16:9 con un clic), cuidado con el
+micrófono integrado (capta teclado y ventilador) y con la ventana a la
+espalda (contraluz, el error más común grabando desde el escritorio).
+
 ## Estado
 
 - [x] Captura de cámara + MediaPipe (pose y rostro)
@@ -152,3 +191,4 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
 - [x] Auth de Supabase (enlace mágico) + presets guardados y sincronizados
 - [x] Instrucción principal sobre el vídeo (HUD) y modo voz (Web Speech API)
 - [x] Grabar y descargar el clip ya recortado a la plataforma elegida
+- [x] Recomendaciones de calidad según la cámara detectada + módulo de laptop

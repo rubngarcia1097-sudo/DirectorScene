@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AccountPanel } from "@/components/AccountPanel";
 import { CameraStage } from "@/components/CameraStage";
 import { ControlBar } from "@/components/ControlBar";
+import { DeviceQualityPanel } from "@/components/DeviceQualityPanel";
 import { PresetsPanel } from "@/components/PresetsPanel";
 import { RecordControls } from "@/components/RecordControls";
 import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
+import { buildDeviceProfile } from "@/lib/ai/device";
 import { useCamera } from "@/lib/hooks/useCamera";
 import { useFrameAnalysis } from "@/lib/hooks/useFrameAnalysis";
 import { useRecorder } from "@/lib/hooks/useRecorder";
@@ -22,6 +24,10 @@ export function DirectorStudio() {
   const auth = useSupabaseSession();
   const [showDebug, setShowDebug] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showQuality, setShowQuality] = useState(false);
+  // El label de la cámara no siempre delata que es la integrada de una
+  // laptop (a veces es tan genérico como "Camera"); el usuario lo confirma.
+  const [forceLaptopCamera, setForceLaptopCamera] = useState(false);
 
   const { analysis, status, error, fps, poseLandmarks } = useFrameAnalysis({
     videoRef: camera.videoRef,
@@ -32,11 +38,23 @@ export function DirectorStudio() {
 
   useVoiceCoach({ analysis, enabled: settings.voice });
 
+  const deviceProfile = useMemo(() => {
+    if (!camera.trackInfo) return null;
+    return buildDeviceProfile({
+      deviceKind: camera.trackInfo.deviceKind,
+      label: camera.trackInfo.label,
+      facingMode: camera.facingMode,
+      capabilities: camera.trackInfo.capabilities,
+      forceLaptopCamera,
+    });
+  }, [camera.facingMode, camera.trackInfo, forceLaptopCamera]);
+
   const recorder = useRecorder({
     videoRef: camera.videoRef,
     active: camera.status === "ready",
     mirrored: camera.mirrored,
     platform: settings.platform,
+    targetFrameRate: deviceProfile?.recommendedFrameRate,
   });
 
   // Al salir de la pantalla cortamos el stream: la cámara no queda encendida.
@@ -62,6 +80,16 @@ export function DirectorStudio() {
         <RecordControls
           recorder={recorder}
           disabled={camera.status !== "ready"}
+        />
+
+        <DeviceQualityPanel
+          profile={deviceProfile}
+          expanded={showQuality}
+          onToggle={() => setShowQuality((current) => !current)}
+          forceLaptopCamera={forceLaptopCamera}
+          onToggleForceLaptop={() => setForceLaptopCamera((current) => !current)}
+          onUseHorizontal={() => update("platform", "youtube")}
+          platformIsHorizontal={settings.platform === "youtube"}
         />
 
         <ControlBar

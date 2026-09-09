@@ -22,6 +22,8 @@ export interface UseRecorderOptions {
   active: boolean;
   mirrored: boolean;
   platform: PlatformId;
+  /** fps de grabación; lo ideal es lo que la cámara realmente entrega (ver device.ts). */
+  targetFrameRate?: number;
 }
 
 export interface UseRecorderResult {
@@ -37,7 +39,7 @@ export interface UseRecorderResult {
   discard: () => void;
 }
 
-const DRAW_INTERVAL_MS = 1000 / 30;
+const DEFAULT_FRAME_RATE = 30;
 const ELAPSED_TICK_MS = 200;
 
 const MIME_CANDIDATES = [
@@ -90,6 +92,7 @@ export function useRecorder({
   active,
   mirrored,
   platform,
+  targetFrameRate = DEFAULT_FRAME_RATE,
 }: UseRecorderOptions): UseRecorderResult {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -199,7 +202,7 @@ export function useRecorder({
         }
       }
 
-      const videoTrack = canvas.captureStream(30).getVideoTracks()[0];
+      const videoTrack = canvas.captureStream(targetFrameRate).getVideoTracks()[0];
       const combined = new MediaStream([videoTrack, ...audioTracks]);
 
       const mimeType = pickMimeType();
@@ -254,12 +257,14 @@ export function useRecorder({
       setStatus("recording");
       setElapsedMs(0);
 
+      const drawIntervalMs = 1000 / targetFrameRate;
+
       const draw = (now: number) => {
         rafRef.current = requestAnimationFrame(draw);
         const state = drawStateRef.current;
         const currentVideo = videoRef.current;
         if (!state || !currentVideo) return;
-        if (now - state.lastDrawAt < DRAW_INTERVAL_MS) return;
+        if (now - state.lastDrawAt < drawIntervalMs) return;
         state.lastDrawAt = now;
 
         context.save();
@@ -286,7 +291,7 @@ export function useRecorder({
         setElapsedMs(performance.now() - startedAtRef.current);
       }, ELAPSED_TICK_MS);
     },
-    [cleanupTimers, mirrored, platform, stopMic, videoRef],
+    [cleanupTimers, mirrored, platform, stopMic, targetFrameRate, videoRef],
   );
 
   // Si la cámara se apaga (o el componente se desmonta) a mitad de grabación,

@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { classifyDeviceKind } from "@/lib/ai/device";
+import type { CameraCapabilitySummary, DeviceKind } from "@/lib/ai/device";
+
 export type CameraStatus = "idle" | "requesting" | "ready" | "denied" | "error";
 export type FacingMode = "user" | "environment";
 
 interface OpenOptions {
   facingMode: FacingMode;
   deviceId: string | null;
+}
+
+/** Lo que realmente negoció la pista de vídeo activa, para dar recomendaciones. */
+export interface CameraTrackInfo {
+  label: string;
+  deviceKind: DeviceKind;
+  capabilities: CameraCapabilitySummary;
 }
 
 export interface UseCameraResult {
@@ -19,10 +29,29 @@ export interface UseCameraResult {
   facingMode: FacingMode;
   devices: MediaDeviceInfo[];
   deviceId: string | null;
+  /** null hasta que hay un stream activo. */
+  trackInfo: CameraTrackInfo | null;
   start: () => Promise<void>;
   stop: () => void;
   flip: () => void;
   selectDevice: (deviceId: string) => void;
+}
+
+function readCapabilities(track: MediaStreamTrack): CameraCapabilitySummary {
+  // Safari y algunos navegadores no implementan getCapabilities(); sin ella
+  // solo queda lo que getSettings() diga de la negociación actual.
+  const capabilities =
+    typeof track.getCapabilities === "function" ? track.getCapabilities() : {};
+  const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
+
+  return {
+    maxWidth: capabilities.width?.max ?? null,
+    maxHeight: capabilities.height?.max ?? null,
+    maxFrameRate: capabilities.frameRate?.max ?? null,
+    currentWidth: settings.width ?? null,
+    currentHeight: settings.height ?? null,
+    currentFrameRate: settings.frameRate ?? null,
+  };
 }
 
 /**
@@ -38,12 +67,14 @@ export function useCamera(): UseCameraResult {
   const [facingMode, setFacingMode] = useState<FacingMode>("user");
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [trackInfo, setTrackInfo] = useState<CameraTrackInfo | null>(null);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setStatus("idle");
+    setTrackInfo(null);
   }, []);
 
   /**
@@ -64,14 +95,18 @@ export function useCamera(): UseCameraResult {
     try {
       streamRef.current?.getTracks().forEach((track) => track.stop());
 
+      // "ideal" es solo una preferencia: el navegador la negocia hacia abajo
+      // solo (nunca la fuerza), así que pedir Full HD no rompe cámaras más
+      // modestas y deja que las buenas entreguen lo que realmente tienen —
+      // limitarlo a 720p de partida las desaprovechaba.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: deviceId
           ? {
               deviceId: { exact: deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
             }
-          : { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          : { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
 
@@ -89,6 +124,17 @@ export function useCamera(): UseCameraResult {
       // Las etiquetas de dispositivo solo existen tras conceder el permiso.
       const list = await navigator.mediaDevices.enumerateDevices();
       setDevices(list.filter((device) => device.kind === "videoinput"));
+
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        const hasTouch = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+        setTrackInfo({
+          label: track.label,
+          deviceKind: classifyDeviceKind(navigator.userAgent, hasTouch),
+          capabilities: readCapabilities(track),
+        });
+      }
+
       setStatus("ready");
     } catch (cause) {
       const name = cause instanceof DOMException ? cause.name : "";
@@ -139,6 +185,7 @@ export function useCamera(): UseCameraResult {
     facingMode,
     devices,
     deviceId,
+    trackInfo,
     start,
     stop,
     flip,
