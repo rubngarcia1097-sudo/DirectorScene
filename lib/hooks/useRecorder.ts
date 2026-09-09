@@ -7,13 +7,25 @@ import { PLATFORMS } from "@/lib/ai/presets";
 import type { PlatformId } from "@/lib/ai/presets";
 import { computeOutputSize } from "@/lib/ai/recording";
 
-export type RecorderStatus = "idle" | "recording" | "processing" | "done" | "error";
+export type RecorderStatus =
+  | "idle"
+  | "countdown"
+  | "recording"
+  | "processing"
+  | "done"
+  | "error";
 
 export interface RecordingResult {
   url: string;
   fileName: string;
   sizeBytes: number;
   durationMs: number;
+}
+
+export interface StartOptions {
+  withAudio: boolean;
+  /** Segundos de cuenta atrás antes de empezar a grabar de verdad; 0 = al toque. */
+  countdownSeconds?: number;
 }
 
 export interface UseRecorderOptions {
@@ -28,6 +40,8 @@ export interface UseRecorderOptions {
 
 export interface UseRecorderResult {
   status: RecorderStatus;
+  /** Segundos restantes de la cuenta atrás; null fuera de ese estado. */
+  countdownSeconds: number | null;
   elapsedMs: number;
   /** Tiempo hasta el corte automático; null si la plataforma no impone tope. */
   remainingMs: number | null;
@@ -36,7 +50,9 @@ export interface UseRecorderResult {
   warning: string | null;
   result: RecordingResult | null;
   supported: boolean;
-  start: (options: { withAudio: boolean }) => Promise<void>;
+  /** Si se pide cuenta atrás, arranca a grabar solo al terminarla. */
+  start: (options: StartOptions) => Promise<void>;
+  /** Detiene la grabación en curso, o cancela la cuenta atrás si aún no empezó. */
   stop: () => void;
   discard: () => void;
 }
@@ -97,6 +113,7 @@ export function useRecorder({
   targetFrameRate = DEFAULT_FRAME_RATE,
 }: UseRecorderOptions): UseRecorderResult {
   const [status, setStatus] = useState<RecorderStatus>("idle");
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [recordingCapMs, setRecordingCapMs] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +131,10 @@ export function useRecorder({
     lastDrawAt: number;
   } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Separado del anterior: la cuenta atrás y el cronómetro de grabación nunca
+  // coinciden en el tiempo, pero mantenerlos en refs distintos evita que
+  // cancelar uno interfiera por accidente con el otro.
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef(0);
   const chunksRef = useRef<Blob[]>([]);
   const resultUrlRef = useRef<string | null>(null);
@@ -123,6 +144,12 @@ export function useRecorder({
     rafRef.current = null;
     if (timerRef.current !== null) clearInterval(timerRef.current);
     timerRef.current = null;
+  }, []);
+
+  const cancelCountdown = useCallback(() => {
+    if (countdownTimerRef.current !== null) clearInterval(countdownTimerRef.current);
+    countdownTimerRef.current = null;
+    setCountdownSeconds(null);
   }, []);
 
   const stopMic = useCallback(() => {
@@ -142,13 +169,21 @@ export function useRecorder({
   }, []);
 
   const stop = useCallback(() => {
+    // Durante la cuenta atrás todavía no existe un MediaRecorder: "detener"
+    // aquí es simplemente cancelarla y no llegar a grabar.
+    if (countdownTimerRef.current !== null) {
+      cancelCountdown();
+      setStatus("idle");
+      return;
+    }
+
     const recorder = recorderRef.current;
     if (!recorder || recorder.state === "inactive") return;
     setStatus("processing");
     recorder.stop();
-  }, []);
+  }, [cancelCountdown]);
 
-  const start = useCallback(
+  const beginRecording = useCallback(
     async ({ withAudio }: { withAudio: boolean }) => {
       const video = videoRef.current;
       if (!isSupported()) {
@@ -161,13 +196,6 @@ export function useRecorder({
         setStatus("error");
         return;
       }
-
-      if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current);
-      resultUrlRef.current = null;
-      setResult(null);
-      setError(null);
-      setWarning(null);
-      chunksRef.current = [];
 
       const crop = computeCropRect(
         video.videoWidth / video.videoHeight,
@@ -308,29 +336,71 @@ export function useRecorder({
     [cleanupTimers, mirrored, platform, stop, stopMic, targetFrameRate, videoRef],
   );
 
-  // Si la cámara se apaga (o el componente se desmonta) a mitad de grabación,
-  // se corta todo en vez de dejar el MediaRecorder y el micrófono colgados.
+  const start = useCallback(
+    async ({ withAudio, countdownSeconds: seconds = 0 }: StartOptions) => {
+      // Mismo reinicio tanto si hay cuenta atrás como si no: un segundo click
+      // en "Grabar" durante la revisión de un clip anterior empieza de cero.
+      if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current);
+      resultUrlRef.current = null;
+      setResult(null);
+      setError(null);
+      setWarning(null);
+      chunksRef.current = [];
+
+      if (seconds <= 0) {
+        await beginRecording({ withAudio });
+        return;
+      }
+
+      setStatus("countdown");
+      setCountdownSeconds(seconds);
+      let remaining = seconds;
+
+      countdownTimerRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          setCountdownSeconds(remaining);
+          return;
+        }
+        if (countdownTimerRef.current !== null) clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+        setCountdownSeconds(null);
+        void beginRecording({ withAudio });
+      }, 1000);
+    },
+    [beginRecording],
+  );
+
+  // Si la cámara se apaga (o el componente se desmonta) a mitad de grabación
+  // o de cuenta atrás, se corta todo en vez de dejarlo a medias.
   useEffect(() => {
     if (active) return;
+    if (countdownTimerRef.current !== null) {
+      cancelCountdown();
+      setStatus("idle");
+      return;
+    }
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
     }
-  }, [active]);
+  }, [active, cancelCountdown]);
 
   useEffect(
     () => () => {
       cleanupTimers();
+      cancelCountdown();
       stopMic();
       if (recorderRef.current && recorderRef.current.state !== "inactive") {
         recorderRef.current.stop();
       }
       if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current);
     },
-    [cleanupTimers, stopMic],
+    [cancelCountdown, cleanupTimers, stopMic],
   );
 
   return {
     status,
+    countdownSeconds,
     elapsedMs,
     remainingMs: recordingCapMs !== null ? Math.max(0, recordingCapMs - elapsedMs) : null,
     error,

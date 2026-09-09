@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { UseRecorderResult } from "@/lib/hooks/useRecorder";
+
+/** Segundos de margen para colocarse en cuadro antes de que arranque la grabación de verdad. */
+const COUNTDOWN_SECONDS = 3;
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -13,6 +16,12 @@ function formatTime(ms: number): string {
 
 function formatSize(bytes: number): string {
   return `${(bytes / 1e6).toFixed(1)} MB`;
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
 }
 
 interface RecordControlsProps {
@@ -27,12 +36,70 @@ interface RecordControlsProps {
  */
 export function RecordControls({ recorder, disabled }: RecordControlsProps) {
   const [withAudio, setWithAudio] = useState(true);
+  const [countdownEnabled, setCountdownEnabled] = useState(true);
+
+  // Barra espaciadora graba/detiene, Esc cancela la cuenta atrás o descarta
+  // el clip revisado — pensado para grabarse a uno mismo sin tener que
+  // volver corriendo a tocar la pantalla.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) return;
+
+      if (event.code === "Space") {
+        if (recorder.status === "idle" && !disabled) {
+          event.preventDefault();
+          void recorder.start({
+            withAudio,
+            countdownSeconds: countdownEnabled ? COUNTDOWN_SECONDS : 0,
+          });
+        } else if (recorder.status === "recording") {
+          event.preventDefault();
+          recorder.stop();
+        }
+        return;
+      }
+
+      if (event.code === "Escape") {
+        if (recorder.status === "countdown") {
+          event.preventDefault();
+          recorder.stop();
+        } else if (recorder.status === "done") {
+          event.preventDefault();
+          recorder.discard();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [countdownEnabled, disabled, recorder, withAudio]);
 
   if (!recorder.supported) {
     return (
       <p className="text-[11px] text-white/40">
         Este navegador no puede grabar vídeo localmente.
       </p>
+    );
+  }
+
+  if (recorder.status === "countdown") {
+    return (
+      <div className="flex items-center gap-3">
+        <span
+          aria-live="polite"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg font-bold text-black tabular-nums"
+        >
+          {recorder.countdownSeconds}
+        </span>
+        <span className="text-sm text-white/60">Prepárate…</span>
+        <button
+          type="button"
+          onClick={recorder.stop}
+          className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70 transition hover:border-white/40 hover:text-white"
+        >
+          Cancelar
+        </button>
+      </div>
     );
   }
 
@@ -110,32 +177,55 @@ export function RecordControls({ recorder, disabled }: RecordControlsProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => void recorder.start({ withAudio })}
-        className="flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition hover:bg-white/85 disabled:opacity-40"
-      >
-        <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-        Grabar clip
-      </button>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() =>
+            void recorder.start({
+              withAudio,
+              countdownSeconds: countdownEnabled ? COUNTDOWN_SECONDS : 0,
+            })
+          }
+          className="flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition hover:bg-white/85 disabled:opacity-40"
+        >
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+          Grabar clip
+        </button>
 
-      <label className="flex items-center gap-1.5 text-xs text-white/60">
-        <input
-          type="checkbox"
-          checked={withAudio}
-          onChange={(event) => setWithAudio(event.target.checked)}
-          className="accent-white"
-        />
-        Con audio
-      </label>
+        <label className="flex items-center gap-1.5 text-xs text-white/60">
+          <input
+            type="checkbox"
+            checked={withAudio}
+            onChange={(event) => setWithAudio(event.target.checked)}
+            className="accent-white"
+          />
+          Con audio
+        </label>
 
-      {recorder.error ? (
-        <p className="w-full text-[11px] text-rose-300">{recorder.error}</p>
-      ) : null}
-      {recorder.warning ? (
-        <p className="w-full text-[11px] text-amber-300">{recorder.warning}</p>
+        <label className="flex items-center gap-1.5 text-xs text-white/60">
+          <input
+            type="checkbox"
+            checked={countdownEnabled}
+            onChange={(event) => setCountdownEnabled(event.target.checked)}
+            className="accent-white"
+          />
+          Cuenta atrás ({COUNTDOWN_SECONDS} s)
+        </label>
+
+        {recorder.error ? (
+          <p className="w-full text-[11px] text-rose-300">{recorder.error}</p>
+        ) : null}
+        {recorder.warning ? (
+          <p className="w-full text-[11px] text-amber-300">{recorder.warning}</p>
+        ) : null}
+      </div>
+
+      {!disabled ? (
+        <p className="text-[10px] text-white/30">
+          Barra espaciadora: grabar/detener · Esc: cancelar o descartar
+        </p>
       ) : null}
     </div>
   );

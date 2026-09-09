@@ -140,6 +140,14 @@ plataforma elegida (9:16 o 16:9), sin las guías del overlay.
 - El audio es opcional (checkbox "Con audio"): pide el micrófono solo al
   pulsar grabar, nunca antes. Si el permiso falla, se sigue grabando sin
   audio con un aviso, en vez de bloquear la toma.
+- Cuenta atrás de 3 s antes de grabar de verdad (desactivable con su
+  checkbox), con un número grande sobre el vídeo y otro en los controles —
+  tiempo para colocarse en cuadro, como en la cámara de TikTok o Instagram.
+  Cancelable mientras cuenta.
+- Atajos de teclado: barra espaciadora graba/detiene, Esc cancela la cuenta
+  atrás o descarta el clip que se está revisando. Se ignoran mientras el
+  foco está en un campo de texto (el nombre de un preset, el correo de la
+  cuenta), para no interferir con la escritura normal.
 - La plataforma queda fijada mientras se grava — cambiarla a mitad de toma
   descoordinaría el recorte con lo que ya se grabó.
 - El clip vive en memoria (`Blob` + `URL.createObjectURL`) hasta que se
@@ -203,3 +211,4 @@ espalda (contraluz, el error más común grabando desde el escritorio).
 - [x] Grabar y descargar el clip ya recortado a la plataforma elegida
 - [x] Recomendaciones de calidad según la cámara detectada + módulo de laptop
 - [x] Tope de duración por plataforma con corte automático + control de linterna
+- [x] Cuenta atrás antes de grabar + atajos de teclado (espacio, Esc)

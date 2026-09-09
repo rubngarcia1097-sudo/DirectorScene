@@ -74,6 +74,7 @@ export function DirectorStudio() {
           subject={analysis?.subject ?? null}
           poseLandmarks={poseLandmarks}
           analysis={analysis}
+          countdownSeconds={recorder.countdownSeconds}
           onStart={() => void camera.start()}
         />
 

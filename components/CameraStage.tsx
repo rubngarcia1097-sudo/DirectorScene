@@ -21,6 +21,8 @@ interface CameraStageProps {
   subject: SubjectMetrics | null;
   poseLandmarks: Landmark[] | null;
   analysis: FrameAnalysis | null;
+  /** Segundos restantes de la cuenta atrás antes de grabar; null si no aplica. */
+  countdownSeconds: number | null;
   onStart: () => void;
 }
 
@@ -36,6 +38,7 @@ export function CameraStage({
   subject,
   poseLandmarks,
   analysis,
+  countdownSeconds,
   onStart,
 }: CameraStageProps) {
   // El contenedor adopta la relación de aspecto real del vídeo, de modo que las
@@ -89,6 +92,16 @@ export function CameraStage({
             />
             {engineStatus === "running" && !engineError ? (
               <LiveHud analysis={analysis} />
+            ) : null}
+            {countdownSeconds !== null ? (
+              <div
+                aria-live="assertive"
+                className="absolute inset-0 flex items-center justify-center bg-black/40"
+              >
+                <span className="text-8xl font-bold text-white drop-shadow-lg tabular-nums">
+                  {countdownSeconds}
+                </span>
+              </div>
             ) : null}
           </>
         ) : (
