@@ -77,6 +77,10 @@ sesión.
 
 ```
 app/                  rutas (App Router): landing, /director y /auth/callback
+  icon.tsx            favicon generado por código (next/og), sin binarios
+  apple-icon.tsx      ícono de pantalla de inicio en iOS/iPadOS
+  director/error.tsx  red de seguridad del estudio si algo revienta al render
+  global-error.tsx    red de seguridad si falla el propio layout raíz
 components/           UI: cámara, HUD en vivo, overlay de guías, controles,
                       grabación, foto, calidad de dispositivo, sugerencias,
                       cuenta y presets
@@ -210,6 +214,19 @@ un botón cambia la plataforma a YouTube 16:9 con un clic), cuidado con el
 micrófono integrado (capta teclado y ventilador) y con la ventana a la
 espalda (contraluz, el error más común grabando desde el escritorio).
 
+## Si algo falla
+
+`app/director/error.tsx` es el *error boundary* de Next.js para el estudio:
+si un bug de verdad revienta durante el render (no un fallo de cámara o de
+red — esos ya tienen su propio estado de error dentro de cada hook), en vez
+de una pantalla en blanco se muestra un mensaje con dos salidas: **Reintentar**
+(`reset()`, vuelve a montar el árbol sin recargar) y **Volver a empezar**
+(recarga completa del documento — necesaria porque Next.js mantiene el
+boundary activo hasta que se llama a `reset()`, así que una navegación de
+cliente a la misma ruta no lo habría limpiado). `app/global-error.tsx` es la
+misma red pero para un fallo en el propio layout raíz, fuera del alcance del
+anterior.
+
 ## Estado
 
 - [x] Captura de cámara + MediaPipe (pose y rostro)
@@ -223,3 +240,4 @@ espalda (contraluz, el error más común grabando desde el escritorio).
 - [x] Tope de duración por plataforma con corte automático + control de linterna
 - [x] Cuenta atrás antes de grabar + atajos de teclado (espacio, Esc)
 - [x] Captura de foto (miniatura) sin interrumpir la grabación de vídeo
+- [x] Favicon propio + error boundaries (estudio y layout raíz)
