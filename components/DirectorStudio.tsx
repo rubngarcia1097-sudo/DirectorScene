@@ -1,0 +1,123 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { CameraStage } from "@/components/CameraStage";
+import { ControlBar } from "@/components/ControlBar";
+import { ShotScore, SuggestionPanel } from "@/components/SuggestionPanel";
+import { useCamera } from "@/lib/hooks/useCamera";
+import { useFrameAnalysis } from "@/lib/hooks/useFrameAnalysis";
+import { useSettings } from "@/lib/hooks/useSettings";
+
+/** Pantalla principal: cámara + análisis + sugerencias en vivo. */
+export function DirectorStudio() {
+  const { settings, update } = useSettings();
+  const camera = useCamera();
+  const [showDebug, setShowDebug] = useState(false);
+
+  const { analysis, status, error, fps, poseLandmarks } = useFrameAnalysis({
+    videoRef: camera.videoRef,
+    enabled: camera.status === "ready",
+    mirrored: camera.mirrored,
+    settings,
+  });
+
+  // Al salir de la pantalla cortamos el stream: la cámara no queda encendida.
+  useEffect(() => camera.stop, [camera.stop]);
+
+  return (
+    <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="flex flex-col gap-4">
+        <CameraStage
+          videoRef={camera.videoRef}
+          cameraStatus={camera.status}
+          cameraError={camera.error}
+          engineStatus={status}
+          engineError={error}
+          mirrored={camera.mirrored}
+          settings={settings}
+          subject={analysis?.subject ?? null}
+          poseLandmarks={poseLandmarks}
+          onStart={() => void camera.start()}
+        />
+
+        <ControlBar
+          settings={settings}
+          onChange={update}
+          devices={camera.devices}
+          deviceId={camera.deviceId}
+          onSelectDevice={camera.selectDevice}
+          onFlip={camera.flip}
+          cameraReady={camera.status === "ready"}
+        />
+      </section>
+
+      <aside className="flex flex-col gap-4">
+        <ShotScore analysis={analysis} />
+
+        <SuggestionPanel
+          analysis={analysis}
+          placeholder={
+            camera.status === "ready"
+              ? "Analizando la toma…"
+              : "Enciende la cámara para recibir indicaciones."
+          }
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowDebug((current) => !current)}
+          className="self-start text-[11px] uppercase tracking-wider text-white/40 hover:text-white/70"
+        >
+          {showDebug ? "Ocultar métricas" : "Ver métricas"}
+        </button>
+
+        {showDebug && analysis ? (
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70">
+            <Metric label="Análisis/s" value={fps.toFixed(0)} />
+            <Metric label="Latencia" value={`${analysis.latencyMs.toFixed(1)} ms`} />
+            <Metric label="Brillo" value={pct(analysis.lighting.brightness)} />
+            <Metric label="Contraste" value={pct(analysis.lighting.contrast)} />
+            <Metric
+              label="Sujeto/fondo"
+              value={`${pct(analysis.lighting.subjectBrightness ?? 0)} / ${pct(
+                analysis.lighting.backgroundBrightness,
+              )}`}
+            />
+            <Metric label="Ocupación" value={pct(analysis.subject.fill)} />
+            <Metric
+              label="Confianza"
+              value={pct(analysis.subject.confidence)}
+            />
+            <Metric
+              label="Inclinación"
+              value={
+                analysis.subject.shoulderTiltDeg === null
+                  ? "—"
+                  : `${analysis.subject.shoulderTiltDeg.toFixed(0)}°`
+              }
+            />
+          </dl>
+        ) : null}
+
+        <p className="mt-auto text-[11px] leading-relaxed text-white/40">
+          El análisis corre íntegramente en tu dispositivo con MediaPipe. Ningún
+          frame se envía a un servidor ni se almacena.
+        </p>
+      </aside>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt className="text-white/40">{label}</dt>
+      <dd className="text-right tabular-nums">{value}</dd>
+    </>
+  );
+}
+
+function pct(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}

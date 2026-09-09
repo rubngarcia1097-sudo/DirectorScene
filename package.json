@@ -1,0 +1,37 @@
+{
+  "name": "directorscene",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/copy-mediapipe-wasm.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/copy-mediapipe-wasm.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/copy-mediapipe-wasm.mjs",
+    "fetch:models": "node scripts/fetch-mediapipe-models.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "@supabase/supabase-js": "^2.116.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22.20.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^5.0.0"
+  },
+  "description": "Director de vídeo con IA en el navegador: encuadre, ángulo e iluminación en tiempo real."
+}
