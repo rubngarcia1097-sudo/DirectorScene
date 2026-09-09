@@ -197,6 +197,19 @@ playwright.config.ts  su configuración
 `lib/ai/` no depende de React ni del DOM salvo por los tipos de MediaPipe: es la
 capa que se reutilizará tal cual en la app React Native/Expo.
 
+### Layout: sugerencias al lado de la cámara, no debajo
+
+`DirectorStudio` pasa a dos columnas (cámara a la izquierda, sugerencias +
+guía técnica a la derecha) a partir de `md:` (768px de ancho), no `lg:`
+(1024px). El vídeo es vertical (9:16) y nunca ocupa todo el ancho
+disponible (`CameraStage` lo limita a `min(100%, calc(68dvh * aspecto))`),
+así que de sobra hay sitio para la columna lateral en cuanto el viewport
+deja de ser un móvil en vertical: una tablet en vertical (~768px), una
+ventana de escritorio sin maximizar, o el propio escritorio a resolución
+normal. Por debajo de 768px (un móvil sosteniendo la app en vertical, sin
+espacio real a los lados) las sugerencias siguen apareciendo debajo, como
+antes.
+
 ## Cómo funciona el análisis
 
 En cada frame (unos 15 por segundo, no todos):
@@ -467,3 +480,5 @@ anterior.
 - [x] Guía técnica fija (posición y luz) por estilo de plano + hints
       accionables en todas las sugerencias de luz/encuadre
 - [x] Manual de uso dentro de la app ("Guía de uso")
+- [x] Sugerencias al lado de la cámara desde tablet/escritorio (antes solo
+      desde 1024px de ancho)

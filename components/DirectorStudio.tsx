@@ -73,7 +73,7 @@ export function DirectorStudio() {
   useEffect(() => camera.stop, [camera.stop]);
 
   return (
-    <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid flex-1 gap-6 md:grid-cols-[minmax(0,1fr)_360px]">
       <section className="flex flex-col gap-4">
         <CameraStage
           videoRef={camera.videoRef}
