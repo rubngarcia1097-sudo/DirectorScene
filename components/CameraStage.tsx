@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { FilterCarousel } from "@/components/FilterCarousel";
 import { GuideOverlay } from "@/components/GuideOverlay";
 import { LiveHud } from "@/components/LiveHud";
 import { composeFilterCss } from "@/lib/ai/filters";
+import type { FilterPresetId } from "@/lib/ai/filters";
 import type { DirectorSettings } from "@/lib/ai/presets";
 import type { Landmark } from "@/lib/ai/subject";
 import type { FrameAnalysis, SubjectMetrics } from "@/lib/ai/types";
@@ -25,6 +27,8 @@ interface CameraStageProps {
   /** Segundos restantes de la cuenta atrás antes de grabar; null si no aplica. */
   countdownSeconds: number | null;
   onStart: () => void;
+  onSelectFilter: (id: FilterPresetId) => void;
+  onLightBoostChange: (value: number) => void;
 }
 
 /** Vídeo en vivo con las guías dibujadas encima. Nada se graba ni se sube. */
@@ -41,6 +45,8 @@ export function CameraStage({
   analysis,
   countdownSeconds,
   onStart,
+  onSelectFilter,
+  onLightBoostChange,
 }: CameraStageProps) {
   // El contenedor adopta la relación de aspecto real del vídeo, de modo que las
   // coordenadas normalizadas del análisis coinciden con los píxeles en pantalla.
@@ -94,6 +100,13 @@ export function CameraStage({
               videoAspect={aspect}
               subject={subject}
               poseLandmarks={poseLandmarks}
+            />
+            <FilterCarousel
+              videoRef={videoRef}
+              filter={settings.filter}
+              lightBoost={settings.lightBoost}
+              onSelectFilter={onSelectFilter}
+              onLightBoostChange={onLightBoostChange}
             />
             {engineStatus === "running" && !engineError ? (
               <LiveHud analysis={analysis} />

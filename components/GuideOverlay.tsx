@@ -129,7 +129,9 @@ function drawCropBorder(
 
   context.fillStyle = "rgba(255, 255, 255, 0.85)";
   context.font = "600 12px system-ui, sans-serif";
-  context.fillText(label, rect.x + 8, rect.y + 18);
+  // Abajo, no arriba: el carrusel de filtros ocupa la esquina superior del
+  // recorte cuando la cámara está encendida.
+  context.fillText(label, rect.x + 8, rect.y + rect.height - 10);
   context.restore();
 }
 

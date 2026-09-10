@@ -92,6 +92,8 @@ export function DirectorStudio() {
           analysis={analysis}
           countdownSeconds={recorder.countdownSeconds}
           onStart={() => void camera.start()}
+          onSelectFilter={(id) => update("filter", id)}
+          onLightBoostChange={(value) => update("lightBoost", value)}
         />
 
         <div className="flex flex-wrap items-start justify-between gap-3">
