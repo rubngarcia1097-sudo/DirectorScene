@@ -8,8 +8,10 @@ import type { FilterPresetId } from "@/lib/ai/filters";
 /** Miniatura cuadrada de cada muestra, en píxeles físicos de canvas. */
 const SWATCH_SIZE = 88;
 /** Redibujar las miniaturas cada tanto basta para transmitir el look real de
- * la cámara sin competir por el hilo principal con el motor de MediaPipe. */
-const REDRAW_INTERVAL_MS = 200;
+ * la cámara sin competir por el hilo principal con el motor de MediaPipe;
+ * más bajo que un simple "cada frame" para que se note fluido sin sumarse de
+ * lleno al coste del análisis en vivo. */
+const REDRAW_INTERVAL_MS = 120;
 
 interface FilterCarouselProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -63,8 +65,8 @@ export function FilterCarousel({
   }, [videoRef]);
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-2 p-3">
-      <div className="pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-2xl bg-black/70 p-2">
+    <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-2 p-3 [animation:overlay-in_260ms_ease-out]">
+      <div className="pointer-events-auto flex max-w-full snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth rounded-2xl bg-black/70 p-2">
         {FILTER_PRESET_LIST.map((preset) => {
           const active = filter === preset.id;
           return (
@@ -73,11 +75,13 @@ export function FilterCarousel({
               type="button"
               aria-pressed={active}
               onClick={() => onSelectFilter(preset.id)}
-              className="flex shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-1"
+              className="flex shrink-0 snap-center flex-col items-center gap-1 rounded-xl px-1 py-1 transition-transform duration-150 ease-out hover:scale-105 active:scale-90"
             >
               <span
-                className={`h-11 w-11 overflow-hidden rounded-full border-2 bg-black transition ${
-                  active ? "border-sky-400 shadow-[0_0_0_2px_rgba(56,189,248,0.35)]" : "border-white/30"
+                className={`h-11 w-11 overflow-hidden rounded-full border-2 bg-black transition-all duration-200 ease-out ${
+                  active
+                    ? "scale-110 border-sky-400 shadow-[0_0_0_2px_rgba(56,189,248,0.35)]"
+                    : "border-white/30"
                 }`}
               >
                 <canvas
@@ -91,7 +95,7 @@ export function FilterCarousel({
                 />
               </span>
               <span
-                className={`text-[9px] font-medium whitespace-nowrap ${
+                className={`text-[9px] font-medium whitespace-nowrap transition-colors duration-200 ${
                   active ? "text-sky-300" : "text-white/90"
                 }`}
               >
@@ -102,7 +106,7 @@ export function FilterCarousel({
         })}
       </div>
 
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-[11px] text-white/90">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-[11px] text-white/90 [animation:overlay-in_260ms_ease-out_60ms_backwards]">
         <span aria-hidden>☀️</span>
         <input
           type="range"
