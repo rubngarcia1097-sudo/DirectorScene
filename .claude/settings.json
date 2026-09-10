@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npm run lint *)",
+      "Bash(npm run build *)",
+      "Bash(npx vitest run *)",
+      "Bash(npx playwright test *)",
+      "Bash(npm run start *)",
+      "Bash(curl -s -o /dev/null -w *)"
+    ]
+  }
+}
